@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Entity\User;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use App\Service\MailerService;
 
 class UserController extends AbstractController
 {
@@ -18,12 +19,19 @@ class UserController extends AbstractController
     private $userRepository;
     private $passwordHasher;
 
-    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher)
+    private $mailerService;
+
+    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService)
     {
         $this->manager = $manager;
         $this->userRepository = $userRepository;
         $this->passwordHasher = $passwordHasher;
+        $this->mailerService = $mailerService;
     }
+
+
+
+    
 
     #[Route('/register', name: 'app_register', methods: ['POST'])]
     public function register(Request $request): Response
@@ -70,7 +78,16 @@ class UserController extends AbstractController
         $this->manager->persist($user);
         $this->manager->flush();
 
-        //Envoi d'un email de confirmation
+        //Envoi d'un email de confirmation de l'inscription
+
+            $this->mailerService->sendEmail(
+            $user->getEmail(),
+            'Inscription réussie',
+            'Bonjour ' . $user->getFirstName() . ',<br><p>Votre inscription a été effectuée avec succès.</p>'
+        );
+
+
+
 
 
         return new JsonResponse(
