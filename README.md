@@ -29,6 +29,9 @@ Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController v�
 
 Si le token est invalide le controleur envoi la réponse {"status":false,"message":"Token invalide"}
 
+En cas de multiples tentatives de connexions erronnées, l'utilisateur va recevoir un mail pour reset son mot de passe. Et cela via un Event Subscriber LoginFailureSubscriber qui va suivre l'évenement lexik_jwt_authentication.on_authentication_failure et mettre à jour le champs loginAttempts dans la base de données. Si le nombre dépasse 5 un email est envoyé via le service Mailer Service.
+Procédure de Reset à mettre en place.
+
 
 
 

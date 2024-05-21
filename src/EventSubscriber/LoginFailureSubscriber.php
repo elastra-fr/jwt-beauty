@@ -65,7 +65,7 @@ public static function getSubscribedEvents()
                 $this->logger->info('Updated login attempt for user: ' . $email . ' to ' . $user->getLoginAttempts());
 
                 // Vérifier le nombre de tentatives de connexion et si supérieur ou égal à 5, envoyer un email à l'utilisateur pour l'informer
-                if ($user->getLoginAttempts() >= 5) {
+                if ($user->getLoginAttempts() > 5) {
                     $this->mailerService->sendEmail(
                         $user->getEmail(),
                         'Tentatives de connexion infructueuses trop nombreuses',
