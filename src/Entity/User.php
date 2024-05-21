@@ -37,6 +37,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $lastName = null;
 
+#[ORM\Column(type: 'integer', options: ['default' => 0])]
+private int $loginAttempts = 0;
+
+
     public function getId(): ?int
     {
         return $this->id;
@@ -132,6 +136,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
+
+        return $this;
+    }
+
+    public function getLoginAttempts(): ?int
+    {
+        return $this->loginAttempts;
+    }
+
+    public function setLoginAttempts(int $loginAttempts): static
+    {
+        $this->loginAttempts = $loginAttempts;
 
         return $this;
     }

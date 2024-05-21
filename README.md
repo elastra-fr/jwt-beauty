@@ -18,7 +18,7 @@ Système d'authentification JWT mis en place avec lexik/jwt-authentication-bundl
 Durée de validité du token 3600 secondes (1h) - Peut être modifié dans \config\packages\lexik_jwt_authentication.yaml
 
 
-Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement la fonction isPasswordComplex  permet de vérifier avec des expressions régulières la conformité du mot de passe.
+Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement la fonction isPasswordComplex  de le UserController permet de vérifier avec des expressions régulières la conformité du mot de passe. La fonction renvoi un message d'erreur indiquant les critères qui ne sont pas respectés.
 
 
 ## Synthèse des Endpoints
@@ -56,7 +56,7 @@ Mot de passe non conforme
 
 {
 	"status": false,
-	"message": "Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial."
+	"message": "Le mot de passe n'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : au moins une majuscule, au moins 8 caractères"
 }
 
 

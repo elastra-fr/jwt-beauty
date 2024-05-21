@@ -48,11 +48,12 @@ class UserController extends AbstractController
         }
 
         // Vérification de la complexité du mot de passe
-        if (!$this->isPasswordComplex($plainPassword)) {
+        $passwordErrors = $this->isPasswordComplex($plainPassword);
+        if (!empty($passwordErrors)) {
             return new JsonResponse(
                 [
                     'status' => false,
-                    'message' => 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.'
+                    'message' => 'Le mot de passe n\'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : ' . implode(', ', $passwordErrors)
                 ],
             );
         }
@@ -69,6 +70,9 @@ class UserController extends AbstractController
         $this->manager->persist($user);
         $this->manager->flush();
 
+        //Envoi d'un email de confirmation
+
+
         return new JsonResponse(
             [
                 'status' => true,
@@ -77,14 +81,26 @@ class UserController extends AbstractController
         );
     }
 
-    private function isPasswordComplex(string $password): bool
+    private function isPasswordComplex(string $password): array
     {
-        $hasUppercase = preg_match('/[A-Z]/', $password);
-        $hasLowercase = preg_match('/[a-z]/', $password);
-        $hasNumber = preg_match('/[0-9]/', $password);
-        $hasSpecialChar = preg_match('/[\W]/', $password);
-        $hasMinLength = strlen($password) >= 8;
+        $errors = [];
 
-        return $hasUppercase && $hasLowercase && $hasNumber && $hasSpecialChar && $hasMinLength;
+        if (!preg_match('/[A-Z]/', $password)) {
+            $errors[] = 'au moins une majuscule';
+        }
+        if (!preg_match('/[a-z]/', $password)) {
+            $errors[] = 'au moins une minuscule';
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            $errors[] = 'au moins un chiffre';
+        }
+        if (!preg_match('/[\W]/', $password)) {
+            $errors[] = 'au moins un caractère spécial';
+        }
+        if (strlen($password) < 8) {
+            $errors[] = 'au moins 8 caractères';
+        }
+
+        return $errors;
     }
 }
