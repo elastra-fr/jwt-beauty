@@ -11,7 +11,7 @@ PHP 8.2
 Framework Symphony V7
 
 
-## Système d'authentification et force du mot de passe   
+## Enregistrement, Système d'authentification et force du mot de passe   
 
 Système d'authentification JWT mis en place avec lexik/jwt-authentication-bundle et extension open SSL pour création des clés publique et privée.
 
@@ -19,6 +19,17 @@ Durée de validité du token 3600 secondes (1h) - Peut être modifié dans \conf
 
 
 Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement la fonction isPasswordComplex  de le UserController permet de vérifier avec des expressions régulières la conformité du mot de passe. La fonction renvoi un message d'erreur indiquant les critères qui ne sont pas respectés.
+
+Lors de l'enregistrement un message d'inscription est envoyé à l'utilisateur pour confirmer son adresse mail et un token d'identification mail est généré et enregsitré dans la base de données.
+
+Ce lien contient pointe vers la route confirm-emai/token-genéré.
+
+Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController vérifie si le token est valide. Si c'est le cas, le champ email_verified est passé à true  dans la base de données et le token est passé à null. Le contrôleur envoi la réponse {"status":true,"message":"Adresse email confirmée avec succès"}
+
+
+Si le token est invalide le controleur envoi la réponse {"status":false,"message":"Token invalide"}
+
+
 
 
 ## Synthèse des Endpoints

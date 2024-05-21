@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Entity\User;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Service\MailerService;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class UserController extends AbstractController
 {
@@ -70,6 +71,7 @@ class UserController extends AbstractController
         $user->setEmail($email);
         $user->setFirstName($firstName);
         $user->setLastName($lastName);
+        $user->generateEmailVerificationToken();
 
         // Hachage du mot de passe
         $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
@@ -80,10 +82,21 @@ class UserController extends AbstractController
 
         //Envoi d'un email de confirmation de l'inscription
 
+        
+
+        $confirmationLink = $this->generateUrl('confirm_email', ['token' => $user->getEmailVerificationToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        $emailBody = sprintf(
+    '       Bonjour %s,<br><p>Votre inscription a été effectuée avec succès. Veuillez cliquer sur le lien suivant pour confirmer votre adresse email : <a href="%s">Confirmer votre adresse email</a></p>',
+        $user->getFirstName(),
+            $confirmationLink
+);
+
             $this->mailerService->sendEmail(
             $user->getEmail(),
             'Inscription réussie',
-            'Bonjour ' . $user->getFirstName() . ',<br><p>Votre inscription a été effectuée avec succès.</p>'
+            $emailBody
+            //'Bonjour ' . $user->getFirstName() . ',<br><p>Votre inscription a été effectuée avec succès.</p>'
         );
 
 

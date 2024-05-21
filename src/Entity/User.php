@@ -6,6 +6,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+//use Symfony\Component\Validator\Constraints\Uuid;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
@@ -39,6 +40,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
 #[ORM\Column(type: 'integer', options: ['default' => 0])]
 private int $loginAttempts = 0;
+
+#[ORM\Column]
+private bool $emailVerified = false;
+
+#[ORM\Column(type: 'string', length: 255, nullable: true)]
+private ?string $emailVerificationToken = null;
 
 
     public function getId(): ?int
@@ -151,4 +158,37 @@ private int $loginAttempts = 0;
 
         return $this;
     }
+
+    public function isEmailVerified(): ?bool
+    {
+        return $this->emailVerified;
+    }
+
+    public function setEmailVerified(bool $emailVerified): static
+    {
+        $this->emailVerified = $emailVerified;
+
+        return $this;
+    }
+
+    public function getEmailVerificationToken(): ?string
+    {
+        return $this->emailVerificationToken;
+    }
+
+    public function setEmailVerificationToken(?string $emailVerificationToken): static
+    {
+        $this->emailVerificationToken = $emailVerificationToken;
+
+        return $this;
+    }
+
+    public function generateEmailVerificationToken(): self
+    {
+        //$this->emailVerificationToken = Uuid::v4()->toRfc4122();
+        $this->emailVerificationToken = bin2hex(random_bytes(32));
+        return $this;
+    }
+
+
 }
