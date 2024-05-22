@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Entity;
 
 use App\Repository\SalonRepository;
@@ -14,11 +13,8 @@ class Salon
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column]
-    private ?int $user_id = null;
-
     #[ORM\Column(length: 255)]
-    private ?string $salon_name = null;
+    private ?string $salonName = null;
 
     #[ORM\Column(length: 255)]
     private ?string $adress = null;
@@ -30,40 +26,31 @@ class Salon
     private ?string $zipCode = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $department_code = null;
+    private ?string $departmentCode = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $etp = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $opening_date = null;
+    private ?\DateTimeInterface $openingDate = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'salons')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $user = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getUserId(): ?int
-    {
-        return $this->user_id;
-    }
-
-    public function setUserId(int $user_id): static
-    {
-        $this->user_id = $user_id;
-
-        return $this;
-    }
-
     public function getSalonName(): ?string
     {
-        return $this->salon_name;
+        return $this->salonName;
     }
 
-    public function setSalonName(string $salon_name): static
+    public function setSalonName(string $salonName): static
     {
-        $this->salon_name = $salon_name;
-
+        $this->salonName = $salonName;
         return $this;
     }
 
@@ -75,7 +62,6 @@ class Salon
     public function setAdress(string $adress): static
     {
         $this->adress = $adress;
-
         return $this;
     }
 
@@ -87,7 +73,6 @@ class Salon
     public function setCity(string $city): static
     {
         $this->city = $city;
-
         return $this;
     }
 
@@ -99,19 +84,17 @@ class Salon
     public function setZipCode(string $zipCode): static
     {
         $this->zipCode = $zipCode;
-
         return $this;
     }
 
     public function getDepartmentCode(): ?string
     {
-        return $this->department_code;
+        return $this->departmentCode;
     }
 
-    public function setDepartmentCode(string $department_code): static
+    public function setDepartmentCode(string $departmentCode): static
     {
-        $this->department_code = $department_code;
-
+        $this->departmentCode = $departmentCode;
         return $this;
     }
 
@@ -123,19 +106,28 @@ class Salon
     public function setEtp(string $etp): static
     {
         $this->etp = $etp;
-
         return $this;
     }
 
     public function getOpeningDate(): ?\DateTimeInterface
     {
-        return $this->opening_date;
+        return $this->openingDate;
     }
 
-    public function setOpeningDate(\DateTimeInterface $opening_date): static
+    public function setOpeningDate(\DateTimeInterface $openingDate): static
     {
-        $this->opening_date = $opening_date;
+        $this->openingDate = $openingDate;
+        return $this;
+    }
 
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
         return $this;
     }
 }

@@ -1,12 +1,12 @@
-<?php
-
+<?php 
 namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-//use Symfony\Component\Validator\Constraints\Uuid;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
@@ -17,18 +17,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 180)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
-    /**
-     * @var list<string> The user roles
-     */
     #[ORM\Column]
     private array $roles = [];
 
-    /**
-     * @var string The hashed password
-     */
     #[ORM\Column]
     private ?string $password = null;
 
@@ -38,15 +32,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $lastName = null;
 
-#[ORM\Column(type: 'integer', options: ['default' => 0])]
-private int $loginAttempts = 0;
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $loginAttempts = 0;
 
-#[ORM\Column]
-private bool $emailVerified = false;
+    #[ORM\Column]
+    private bool $emailVerified = false;
 
-#[ORM\Column(type: 'string', length: 255, nullable: true)]
-private ?string $emailVerificationToken = null;
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $emailVerificationToken = null;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Salon::class)]
+    private Collection $salons;
+
+    public function __construct()
+    {
+        $this->salons = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -61,47 +62,27 @@ private ?string $emailVerificationToken = null;
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
         return $this;
     }
 
-    /**
-     * A visual identifier that represents this user.
-     *
-     * @see UserInterface
-     */
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * @see UserInterface
-     *
-     * @return list<string>
-     */
     public function getRoles(): array
     {
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
-    /**
-     * @param list<string> $roles
-     */
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
-
         return $this;
     }
 
-    /**
-     * @see PasswordAuthenticatedUserInterface
-     */
     public function getPassword(): string
     {
         return $this->password;
@@ -110,17 +91,12 @@ private ?string $emailVerificationToken = null;
     public function setPassword(string $password): static
     {
         $this->password = $password;
-
         return $this;
     }
 
-    /**
-     * @see UserInterface
-     */
     public function eraseCredentials(): void
     {
         // If you store any temporary, sensitive data on the user, clear it here
-        // $this->plainPassword = null;
     }
 
     public function getFirstName(): ?string
@@ -131,7 +107,6 @@ private ?string $emailVerificationToken = null;
     public function setFirstName(string $firstName): static
     {
         $this->firstName = $firstName;
-
         return $this;
     }
 
@@ -143,7 +118,6 @@ private ?string $emailVerificationToken = null;
     public function setLastName(string $lastName): static
     {
         $this->lastName = $lastName;
-
         return $this;
     }
 
@@ -155,7 +129,6 @@ private ?string $emailVerificationToken = null;
     public function setLoginAttempts(int $loginAttempts): static
     {
         $this->loginAttempts = $loginAttempts;
-
         return $this;
     }
 
@@ -167,7 +140,6 @@ private ?string $emailVerificationToken = null;
     public function setEmailVerified(bool $emailVerified): static
     {
         $this->emailVerified = $emailVerified;
-
         return $this;
     }
 
@@ -179,16 +151,37 @@ private ?string $emailVerificationToken = null;
     public function setEmailVerificationToken(?string $emailVerificationToken): static
     {
         $this->emailVerificationToken = $emailVerificationToken;
-
         return $this;
     }
 
     public function generateEmailVerificationToken(): self
     {
-        //$this->emailVerificationToken = Uuid::v4()->toRfc4122();
         $this->emailVerificationToken = bin2hex(random_bytes(32));
         return $this;
     }
 
+    public function getSalons(): Collection
+    {
+        return $this->salons;
+    }
 
+    public function addSalon(Salon $salon): self
+    {
+        if (!$this->salons->contains($salon)) {
+            $this->salons[] = $salon;
+            $salon->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeSalon(Salon $salon): self
+    {
+        if ($this->salons->contains($salon)) {
+            $this->salons->removeElement($salon);
+            if ($salon->getUser() === $this) {
+                $salon->setUser(null);
+            }
+        }
+        return $this;
+    }
 }
