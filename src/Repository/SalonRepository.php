@@ -16,6 +16,16 @@ class SalonRepository extends ServiceEntityRepository
         parent::__construct($registry, Salon::class);
     }
 
+      public function getSalonById(int $id): ?Salon
+    {
+        return $this->createQueryBuilder('s')
+            ->where('s.id = :id')
+            ->setParameter('id', $id)
+            ->getQuery()
+            ->getOneOrNullResult()
+        ;
+    }
+
     //    /**
     //     * @return Salon[] Returns an array of Salon objects
     //     */

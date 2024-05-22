@@ -169,13 +169,142 @@ Le controlleur contient des champs autorisés pour la modification. Si des champ
 
 ##### Ajout d'un salon par l'utilisateur en cours
 
+Chemin
+PATH/api/profil/create-salon
+Méthode : POST 
+Header "Bearer Texte_du_token_jwt"
+
+Le controlleur va récupérer l'id de l'utilisateur associé au token et l'intégrer à l'intégrer à la colonne user_id.
+
+Body :
+
+{
+    "salon_name": "Beauty Salon1",
+    "adress": "123 rue des Salons",
+    "city": "Caen",
+    "zipCode": "14000",
+    "department_code": "14",
+    "etp": "2",
+    "opening_date": "2024-02-01T10:00:00"
+}
+
+En cas de succès :
+{
+	"message": "Salon créé avec succès"
+}
+
+
 
 
 ##### Récupération de la liste de salons appartenant à l'utilisateur en cours
 
+Chemin
+PATH/api/profil/salons
+Méthode : GET
+Header "Bearer Texte_du_token_jwt"
+
+Le controlleur ne va retourner que les salons associés à l'id porteur du token.
+
+Réponse :
+
+[
+	{
+		"id": 1,
+		"salonName": "Nouveau salon",
+		"adress": "123 rue des Salons",
+		"city": "Paris",
+		"zipCode": "75000",
+		"departmentCode": "75",
+		"etp": "10.00",
+		"openingDate": "2023-03-20 10:00:00"
+	},
+	{
+		"id": 2,
+		"salonName": "Nouveau salon 2",
+		"adress": "123 rue des Salons",
+		"city": "Paris",
+		"zipCode": "75000",
+		"departmentCode": "75",
+		"etp": "10.00",
+		"openingDate": "2024-04-19 10:00:00"
+	}
+]
+
+En cas d'absence de salon :
+
+{
+	"message": "Aucun salon trouvé pour cet utilisateur"
+}
+
+
+
+
+
+
+
 ##### Affichage des informations d'un salon précis appartenant à l'utilisateur en cours 
 
+
+Chemin
+PATH/api/profil/salon/{id}
+Méthode : GET
+Header "Bearer Texte_du_token_jwt"
+
+Avant de répondre, le controleur va vérifier préalablement que le salon passé en url appartient bien à l'utilisateur porteur du token en comparant l'id du salon demandé avec l'id associé au porteur du token.
+
+En de correspondance d'Id :
+{
+	"id": 3,
+	"salonName": "Beauty Salon1",
+	"adress": "123 rue des Salons",
+	"city": "Caen",
+	"zipCode": "14000",
+	"departmentCode": "14",
+	"etp": "2.00",
+	"openingDate": "2024-02-01 10:00:00"
+}
+
+
+Si les id ne correspondent pas :
+
+{
+	"message": "Accès interdit"
+}
+
+Si l'id Salon n'existe pas :
+{
+	"message": "Salon non trouvé"
+}
+
+
+
+
 ##### Modification des informations d'un salon précis appartenant à l'utilisateur en cours
+
+Chemin
+PATH/api/profil/salon/update/{id}
+Méthode : PATCH
+Header "Bearer Texte_du_token_jwt"
+
+Ce chemin permet de modifier toutes les données d'un salon. Il n'est pas nécessaire de tous les modifier, la modification d'un seul paramètre est possible. En cas de modification partielle les autres champs ne seront pas affectés :
+
+Body :
+{
+	"salon_name":"Beauty parlor"
+}
+
+Mise à jour réussie :
+
+{
+	"message": "Salon mis à jour avec succès"
+}
+
+Tentative de mise jour d'un salon qui n'est pas la propriété du porteur du token
+
+{
+	"message": "Accès interdit"
+}
+
 
 ##### Suppression d'un salon appartenant à l'utilisateur en cours
 

@@ -174,6 +174,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+
     public function removeSalon(Salon $salon): self
     {
         if ($this->salons->contains($salon)) {
