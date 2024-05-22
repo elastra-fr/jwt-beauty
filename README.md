@@ -102,6 +102,88 @@ Echec du Login =>
 }
 
 
+### Endpoint "profil"
+
+L'utilisateur Authentifié peut accéder aux Endpoints situés derrière la route /api/*.
+
+L'accès à ces routes nécessitent d'inclure dans le header de l'entête Authorization  avec la valeur "Bearer Texte_du_token_jwt".
+
+#### profil/user
+
+##### Informations utilisateur en cours
+
+Chemin
+PATH/api/profil/user/informations
+Méthode : GET
+Header "Bearer Texte_du_token_jwt"
+
+Réponse :
+
+{
+	"current_user": {
+		"id": 17,
+		"firstName": "Jules",
+		"lastName": "Cesar",
+		"email": "jules.cesar@test.com",
+		"emailVerified": false
+	}
+}
+
+##### Modification profil utilisateur en cours
+
+Ce chemin permet de modifier fistName, lastName et email. Il n'est pas nécessaire de tous les modifier, la modification d'un seul paramètre est possible.
+
+Chemin
+PATH/api/profil/user/update
+Méthode : PATCH
+Header "Bearer Texte_du_token_jwt"
+
+Body :
+
+{
+
+"firstName" : "Julien",
+"lastName" : "Dupont",
+"email" : "julien.dupont@test.com"
+
+}
+
+
+
+Réponse : 
+{
+	"status": true,
+	"message": "Utilisateur modifié avec succès"
+}
+
+Le controlleur contient des champs autorisés pour la modification. Si des champs non autorisés sont passés dans le body :
+
+{
+	"status": false,
+	"message": "Les champs suivants ne peuvent pas être modifiés : password"
+}
+
+
+
+#### profil/salon
+
+##### Ajout d'un salon par l'utilisateur en cours
+
+
+
+##### Récupération de la liste de salons appartenant à l'utilisateur en cours
+
+##### Affichage des informations d'un salon précis appartenant à l'utilisateur en cours 
+
+##### Modification des informations d'un salon précis appartenant à l'utilisateur en cours
+
+##### Suppression d'un salon appartenant à l'utilisateur en cours
+
+
+
+
+
+
 ## Structure base de donnée
 
 Table Users 

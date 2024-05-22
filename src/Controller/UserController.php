@@ -12,7 +12,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Entity\User;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Service\MailerService;
+use PHPUnit\Util\Json;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class UserController extends AbstractController
 {
@@ -22,17 +24,20 @@ class UserController extends AbstractController
 
     private $mailerService;
 
-    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService)
+    private $security;
+
+    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService, Security $security)
     {
         $this->manager = $manager;
         $this->userRepository = $userRepository;
         $this->passwordHasher = $passwordHasher;
         $this->mailerService = $mailerService;
+        $this->security = $security;
     }
 
 
 
-    
+    /**************Enregistrement d'un nouvel utilisateur******************* */
 
     #[Route('/register', name: 'app_register', methods: ['POST'])]
     public function register(Request $request): Response
@@ -110,6 +115,107 @@ class UserController extends AbstractController
             ],
         );
     }
+
+/**************Récupération des infos de l'utilisateur authentifié JWT******************* */
+
+    #[Route('api/profil/user/informations', name: 'get_user', methods: ['GET'])]
+
+    public function getUserInfo():JsonResponse
+    {
+        $user = $this->security->getUser();
+
+      if (!$user) {
+            return new JsonResponse(
+                [
+                    'status' => false,
+                    'message' => 'Utilisateur non authentifié'
+                ],
+                JsonResponse::HTTP_UNAUTHORIZED
+            );
+        }
+
+        return new JsonResponse(
+            [
+                //'status' => true,
+                'current_user' => [
+                    'id' => $user->getId(),
+                    'firstName' => $user->getFirstName(),
+                    'lastName' => $user->getLastName(),
+                    'email' => $user->getEmail(),
+                    'emailVerified' => $user->isEmailVerified()
+                ]
+            ],
+            JsonResponse::HTTP_OK
+        );
+
+
+    }
+
+
+    /**************Modifier les données de  l'utilisateur en cours******************* */
+
+    #[Route('api/profil/user/update', name: 'update_user', methods: ['PATCH'])]
+
+public function updateUser(Request $request): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+
+
+
+
+
+    $user = $this->security->getUser();
+
+    if (!$user) {
+        return new JsonResponse(
+            [
+                'status' => false,
+                'message' => 'Utilisateur non authentifié'
+            ],
+            JsonResponse::HTTP_UNAUTHORIZED
+        );
+    }
+
+        //Analyser les données reçues et vérifier que seuls les champs autorisés sont modifiés sinon retourner une erreur
+
+        $invalidFields = array_diff(array_keys($data), ['firstName', 'lastName', 'email']);
+
+        if (!empty($invalidFields)) {
+            return new JsonResponse(
+                [
+                    'status' => false,
+                    'message' => 'Les champs suivants ne peuvent pas être modifiés : ' . implode(', ', $invalidFields)
+                ],
+                JsonResponse::HTTP_BAD_REQUEST
+            );
+        }
+
+
+
+    if (isset($data['firstName'])) {
+        $user->setFirstName($data['firstName']);
+    }
+
+    if (isset($data['lastName'])) {
+        $user->setLastName($data['lastName']);
+    }
+
+    if (isset($data['email'])) {
+        $user->setEmail($data['email']);
+    }
+
+    $this->manager->persist($user);
+    $this->manager->flush();
+
+    return new JsonResponse(
+        [
+            'status' => true,
+            'message' => 'Utilisateur modifié avec succès'
+        ],
+        JsonResponse::HTTP_OK
+    );
+}
+
 
     private function isPasswordComplex(string $password): array
     {
