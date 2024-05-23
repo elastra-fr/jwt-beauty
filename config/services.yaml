@@ -14,6 +14,13 @@ services:
         tags:
             - { name: kernel.event_subscriber }
 
+    App\Service\isMailVerifiedService:
+        arguments:
+            $security: '@security.helper'
+
+    App\EventSubscriber\IsMailVerifiedSubscriber:
+        tags:
+            - { name: 'kernel.event_subscriber' }
 
 
     App\Service\MailerService:

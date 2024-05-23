@@ -22,10 +22,17 @@ Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un
 
 Lors de l'enregistrement un message d'inscription est envoyé à l'utilisateur pour confirmer son adresse mail et un token d'identification mail est généré et enregsitré dans la base de données.
 
-Ce lien contient pointe vers la route confirm-emai/token-genéré.
+Ce lien contient pointe vers la route confirm-email/{token-genéré}.
 
 Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController vérifie si le token est valide. Si c'est le cas, le champ email_verified est passé à true  dans la base de données et le token est passé à null. Le contrôleur envoi la réponse {"status":true,"message":"Adresse email confirmée avec succès"}
 
+Le service IsMailVerifiedService et le subscriber IsMailVerifiedSubscriber vont vérifier si l'utilisateur porteur du token a bien validé son adresse mail. Si ce n'est pas le cas le subscriber va renvoyer le message :
+
+{
+	"message": "Email non vérifié. Veuillez cliquer sur lien de vérification dans l'email envoyé lors de l'inscription. Sans cette action vous ne pourrez pas accéder à ce service"
+}
+
+Les routes concernées par ce contrôle sont listées dans la variable $routesRequiringVerification du subscriber IsMailVerifiedSubscriber. Cette liste permet de limiter ou non l'accès à certaines ressources si l'email n'est pas vérifié. 
 
 Si le token est invalide le controleur envoi la réponse {"status":false,"message":"Token invalide"}
 

@@ -192,7 +192,7 @@ public function getListSalon(): JsonResponse
     }
 
     /**************Supprimer un salon par son ID******************* */  
-
+/*
     #[Route('/api/profil/salon/delete/{id}', name: 'app_salon_delete', methods: ['DELETE'])]
 
     public function deleteSalon(int $id, SalonRepository $salonRepository): JsonResponse
@@ -214,6 +214,6 @@ public function getListSalon(): JsonResponse
 
         return new JsonResponse(['message' => 'Salon supprimé avec succès'], 200);
     }
-
+*/
 
 }
