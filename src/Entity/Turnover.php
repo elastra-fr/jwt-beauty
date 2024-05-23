@@ -12,17 +12,17 @@ class Turnover
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-
-    //id doit s'autoincrémenter
-
-
     private ?int $id = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $period = null;
 
-    #[ORM\Column]
+    #[ORM\Column(name: "salon_id", type: Types::INTEGER)]
     private ?int $salon_id = null;
+
+    #[ORM\ManyToOne(targetEntity: Salon::class)]
+    #[ORM\JoinColumn(name: "salon_id", referencedColumnName: "id", nullable: false)]
+    private ?Salon $salon = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 15, scale: 2)]
     private ?string $turnoverAmount = null;
@@ -59,6 +59,18 @@ class Turnover
     public function setSalonId(int $salon_id): static
     {
         $this->salon_id = $salon_id;
+
+        return $this;
+    }
+
+    public function getSalon(): ?Salon
+    {
+        return $this->salon;
+    }
+
+    public function setSalon(?Salon $salon): static
+    {
+        $this->salon = $salon;
 
         return $this;
     }

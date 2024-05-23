@@ -326,9 +326,13 @@ Body
 		
 }
 
-En cas de succès
+Après l'insertion le contrôleur va recalculer les statistiques (moyenne nationale, départementale, régionale) et va retourner une appréciation sur le positionnement et statistiques brut pour usage par le front si nécessaire :
 {
-	"message": "Chiffre d'affaires ajouté avec succès"
+	"message": "Chiffre d'affaires ajouté avec succès",
+	"positionnement": "Votre chiffre d'affaires déclaré est inférieur à la moyenne nationale qui est de 5640.66 €",
+	"statistiques": {
+		"moyenne_nationale": 5640.66
+	}
 }
 
 Si le chiffre d'affaires du mois précédent a déjà été ajouté :

@@ -6,6 +6,7 @@ use App\Entity\Turnover;
 use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\Query\Expr\Join;
 
 /**
  * @extends ServiceEntityRepository<Turnover>
@@ -39,6 +40,32 @@ class TurnoverRepository extends ServiceEntityRepository
             ->getResult()
         ;
     }
+
+//Calcul de la moyenne National des chiffres d'affaires
+    public function getAllTurnoversAverage(): ?float
+{
+    $result = $this->createQueryBuilder('t')
+        ->select('AVG(t.turnoverAmount) as avg_turnover')
+        ->getQuery()
+        ->getSingleScalarResult();
+
+    return $result;
+}
+
+public function getAverageTurnoverInDepartment(string $departmentCode): ?float
+{
+    return $this->createQueryBuilder('t')
+        ->select('AVG(t.turnoverAmount) as average_turnover')
+        ->innerJoin('t.salon', 's', Join::WITH, 's.departmentCode = :department_code')
+        ->setParameter('department_code', $departmentCode)
+        ->getQuery()
+        ->getSingleScalarResult();
+}
+
+
+
+
+
 
 //    /**
 //     * @return Turnover[] Returns an array of Turnover objects

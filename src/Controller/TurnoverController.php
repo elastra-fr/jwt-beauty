@@ -32,7 +32,7 @@ public function __construct(Security $security,  EntityManagerInterface $manager
 
 #[Route('/api/turnover-insert/{salonId}', name: 'app_turnover_add', methods: ['POST'])]
 
-public function addTurnover(Request $request, SalonRepository $salonRepository): JsonResponse
+public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
     {
         $user = $this->security->getUser();
 
@@ -41,6 +41,9 @@ public function addTurnover(Request $request, SalonRepository $salonRepository):
         }
 
         $salonId = $request->get('salonId');
+
+        //var_dump($salonId);
+
         $salon = $salonRepository->getSalonById($salonId);
 
         if (!$salon) {
@@ -51,6 +54,8 @@ public function addTurnover(Request $request, SalonRepository $salonRepository):
         if ($salon->getUser()->getId() !== $user->getId()) {
             return new JsonResponse(['message' => 'Vous n\'êtes pas propriétaire de ce salon'], 403);
         }
+
+        $departmentCode = $salon->getDepartmentCode();
 
         $lastMonthFirstDay = (new DateTime('first day of last month'))->setTime(0, 0);
         $turnover = $this->manager->getRepository(Turnover::class)->findOneBy([
@@ -63,17 +68,47 @@ public function addTurnover(Request $request, SalonRepository $salonRepository):
         }
 
         $data = json_decode($request->getContent(), true);
-        var_dump($data);
+        
+        
 
         $turnover = new Turnover();
         $turnover->setTurnoverAmount($data['amount']);
         $turnover->setPeriod($lastMonthFirstDay);
-        $turnover->setSalonId($salonId);
+        $turnover->setSalon($salon);
 
         $this->manager->persist($turnover);
         $this->manager->flush();
 
-        return new JsonResponse(['message' => 'Chiffre d\'affaires ajouté avec succès'], 201);
+        $averageTurnoverNationWide = $turnoverRepository->getAllTurnoversAverage();
+        $averageTurnoverNationWide = round($averageTurnoverNationWide, 2);
+
+        if ($data['amount'] > $averageTurnoverNationWide) {
+            $nationalPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
+        }
+
+        else if ($data['amount'] < $averageTurnoverNationWide) {
+            $nationalPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
+        }
+
+        $averageTurnoverDepartment= $turnoverRepository->getAverageTurnoverInDepartment($departmentCode);
+        $averageTurnoverDepartment = round($averageTurnoverDepartment, 2);
+
+        if ($data['amount'] > $averageTurnoverDepartment) {
+            $departmentPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne départementale ($departmentCode) qui est de $averageTurnoverDepartment €";
+        }
+
+        else if ($data['amount'] < $averageTurnoverDepartment) {
+            $departmentPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne départementale($departmentCode) qui est de $averageTurnoverDepartment €";
+        }
+        
+    
+
+
+        return new JsonResponse(['message' => 'Chiffre d\'affaires ajouté avec succès', "positionnement_national"=>$nationalPosition, "positionnement_departemental"=>$departmentPosition, "statistiques"=>[
+            "moyenne_nationale"=>$averageTurnoverNationWide,
+            "moyenne_departementale"=>$averageTurnoverDepartment
+        
+        ]], 201);
     }
 
     // /**************Récupération de tous les chiffres d'affaires d'un salon******************* */
