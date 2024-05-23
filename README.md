@@ -240,8 +240,6 @@ En cas d'absence de salon :
 
 
 
-
-
 ##### Affichage des informations d'un salon précis appartenant à l'utilisateur en cours 
 
 
@@ -286,6 +284,8 @@ PATH/api/profil/salon/update/{id}
 Méthode : PATCH
 Header "Bearer Texte_du_token_jwt"
 
+Le controleur va vérifier préalablement que le salon passé en url appartient bien à l'utilisateur porteur du token en comparant l'id du salon demandé avec l'id associé au porteur du token.
+
 Ce chemin permet de modifier toutes les données d'un salon. Il n'est pas nécessaire de tous les modifier, la modification d'un seul paramètre est possible. En cas de modification partielle les autres champs ne seront pas affectés :
 
 Body :
@@ -306,12 +306,87 @@ Tentative de mise jour d'un salon qui n'est pas la propriété du porteur du tok
 }
 
 
-##### Suppression d'un salon appartenant à l'utilisateur en cours
+### Endpoints CA
 
+#### Insertion CA du mois précédent pour un salon
 
+Chemin
+PATH/api/turnover-insert/{salonId}
+Méthode : POST
+Header "Bearer Texte_du_token_jwt"
 
+Le controleur va vérifier préalablement que le salon passé en url appartient bien à l'utilisateur porteur du token en comparant l'id du salon demandé avec l'id associé au porteur du token.
 
+Body
 
+{
+	
+	"amount":6000
+	
+		
+}
+
+En cas de succès
+{
+	"message": "Chiffre d'affaires ajouté avec succès"
+}
+
+Si le chiffre d'affaires du mois précédent a déjà été ajouté :
+
+{
+	"message": "Le chiffre d'affaires pour ce mois existe déjà"
+}
+
+Si la requête porte sur un salon pour n'appartenant pas au porteur du toke:
+
+{
+	"message": "Vous n'êtes pas propriétaire de ce salon"
+}
+
+#### Historique des CA pour un salon
+
+Chemin
+PATH/api/turnover/{salonId}
+Méthode : GET
+Header "Bearer Texte_du_token_jwt"
+
+Le controleur va vérifier préalablement que le salon passé en url appartient bien à l'utilisateur porteur du token en comparant l'id du salon demandé avec l'id associé au porteur du token.
+
+En cas de succès de la requête obtention de la liste des CA déclarés pour le salon concerné :
+
+[
+	{
+		"id": 1,
+		"period": "2024-04-01",
+		"turnover_amount": "6000.00"
+	},
+	{
+		"id": 57,
+		"period": "2024-03-01",
+		"turnover_amount": "241.13"
+	},
+	{
+		"id": 56,
+		"period": "2024-02-01",
+		"turnover_amount": "8946.51"
+	},
+	{
+		"id": 55,
+		"period": "2024-01-01",
+		"turnover_amount": "1597.14"
+	},
+	{
+		"id": 54,
+		"period": "2023-12-01",
+		"turnover_amount": "6246.39"
+	}
+	]
+
+Si l'utilisateur tente de renseigner l'id d'un salon qu'il ne possède pas :
+
+{
+	"message": "Vous n'êtes pas propriétaire de ce salon"
+}
 
 ## Structure base de donnée
 
