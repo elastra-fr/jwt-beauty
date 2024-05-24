@@ -36,7 +36,7 @@ En cas d'erreur :
 }
 
 
-
+Ce format est normalisé grace au service JsonResponseNormalizer.  Potentiellement cette standardisation peut faciliter la gestion des réponses par le front end.
 
 
 

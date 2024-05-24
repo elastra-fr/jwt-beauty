@@ -47,7 +47,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column (type: 'boolean', options: ['default' => false])]
     private ?bool $passwordResetInProgress = false;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $password_reset_token = null;
 
     public function __construct()

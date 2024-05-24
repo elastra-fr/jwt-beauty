@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
-use PHPUnit\Util\Json;
+//use PHPUnit\Util\Json;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
+//use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -14,22 +14,36 @@ use App\Entity\Salon;
 use App\Repository\DepartementRepository;
 use DateTime;
 use App\Repository\SalonRepository;
+use App\Service\JsonResponseNormalizer;
 
 
 class SalonController extends AbstractController
 {
 
-private $security;
-private $manager;
+private Security $security;
+private EntityManagerInterface $manager;
 
-    public function __construct(Security $security,  EntityManagerInterface $manager)
+private JsonResponseNormalizer $jsonResponseNormalizer;
+
+/**
+ * SalonController constructor.
+ */
+
+    public function __construct(Security $security,  EntityManagerInterface $manager, JsonResponseNormalizer $jsonResponseNormalizer)
     {
         $this->security = $security;
         $this->manager = $manager;
+        $this->jsonResponseNormalizer = $jsonResponseNormalizer;
     }
 
 
     /***************Liste des salons dont l'utilisateur actuelle est propriétaire**/
+ 
+ /**
+  * Cette méthode permet de récupérer la liste des salons dont l'utilisateur actuel est propriétaire
+    * @return JsonResponse : la réponse HTTP
+  */
+ 
     #[Route('/api/profil/salons', name: 'app_salon', methods: ['GET'])]
 
 
@@ -38,13 +52,17 @@ public function getListSalon(): JsonResponse
         $user = $this->security->getUser();
 
         if (!$user) {
-            return new JsonResponse(['message' => 'Utilisateur non authentifié'], 401);
+            $UserNotAuthenticated = $this->jsonResponseNormalizer->respondError('UNAUTHORIZED', 'Utilisateur non authentifié', 401);
+            return $UserNotAuthenticated;
+            //return new JsonResponse(['message' => 'Utilisateur non authentifié'], 401);
         }
 
         $salons = $user->getSalons();
 
         if ($salons->isEmpty()) {
-            return new JsonResponse(['message' => 'Aucun salon trouvé pour cet utilisateur'], 200);
+            $NoSalonFound = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Aucun salon trouvé pour cet utilisateur', 200);
+            return $NoSalonFound;
+            //return new JsonResponse(['message' => 'Aucun salon trouvé pour cet utilisateur'], 200);
         }
 
         $salonArray = [];
@@ -69,7 +87,9 @@ public function getListSalon(): JsonResponse
             ];
         }
 
-        return new JsonResponse($salonArray, 200);
+        $listSalon = $this->jsonResponseNormalizer->respondSuccess(200, ['salons' => $salonArray]);
+        return $listSalon;
+        //return new JsonResponse($salonArray, 200);
     }
 
     /**************Créer un salon pour l'utilisateur actuel en récupérant les données de la requete http*******************/

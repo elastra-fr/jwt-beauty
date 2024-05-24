@@ -12,32 +12,38 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Entity\User;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use App\Service\MailerService;
-use PHPUnit\Util\Json;
+use App\Service\JsonResponseNormalizer;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
 class UserController extends AbstractController
 {
-    private $manager;
-    private $userRepository;
-    private $passwordHasher;
+    private EntityManagerInterface $manager;
+    private UserRepository $userRepository;
+    private UserPasswordHasherInterface $passwordHasher;
+    private MailerService $mailerService;
+    private Security $security;
+    private JsonResponseNormalizer $jsonResponseNormalizer;
 
-    private $mailerService;
-
-    private $security;
-
-    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService, Security $security)
+    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService, Security $security, JsonResponseNormalizer $jsonResponseNormalizer)
     {
         $this->manager = $manager;
         $this->userRepository = $userRepository;
         $this->passwordHasher = $passwordHasher;
         $this->mailerService = $mailerService;
         $this->security = $security;
+        $this->jsonResponseNormalizer = $jsonResponseNormalizer;
     }
 
 
 
     /**************Enregistrement d'un nouvel utilisateur******************* */
+
+/**
+ * Cette méthode permet d'enregistrer un nouvel utilisateur
+ * @param Request $request : la requête HTTP
+ * @return JsonResponse : la réponse HTTP
+ */
 
     #[Route('/register', name: 'app_register', methods: ['POST'])]
     public function register(Request $request): Response
@@ -52,24 +58,21 @@ class UserController extends AbstractController
         // Vérification si l'email existe
         $emailExist = $this->userRepository->findOneBy(['email' => $email]);
 
-        if ($emailExist) {
-            return new JsonResponse(
-                [
-                    'status' => false,
-                    'message' => 'Cet email existe déjà'
-                ],
-            );
+      
+         if ($emailExist) {
+            
+              $mailExistResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Cet email existe déjà', 400);
+                return $mailExistResponse;
+
         }
 
         // Vérification de la complexité du mot de passe
         $passwordErrors = $this->isPasswordComplex($plainPassword);
         if (!empty($passwordErrors)) {
-            return new JsonResponse(
-                [
-                    'status' => false,
-                    'message' => 'Le mot de passe n\'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : ' . implode(', ', $passwordErrors)
-                ],
-            );
+
+            $InvalidPasswordResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Le mot de passe n\'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : ' . implode(', ', $passwordErrors), 400);
+            return $InvalidPasswordResponse;
+      
         }
 
         $user = new User();
@@ -101,22 +104,24 @@ class UserController extends AbstractController
             $user->getEmail(),
             'Inscription réussie',
             $emailBody
-            //'Bonjour ' . $user->getFirstName() . ',<br><p>Votre inscription a été effectuée avec succès.</p>'
+            
         );
 
 
 
 
+    $registerSuccessResponse= $this->jsonResponseNormalizer->respondSuccess(200, ['message' =>'Utilisateur ajouté avec succès']);
+    return $registerSuccessResponse;
 
-        return new JsonResponse(
-            [
-                'status' => true,
-                'message' => 'Utilisateur ajouté avec succès'
-            ],
-        );
     }
 
 /**************Récupération des infos de l'utilisateur authentifié JWT******************* */
+
+/**
+ * Cette méthode permet de récupérer les informations de l'utilisateur authentifié
+ * @return JsonResponse : la réponse HTTP
+ * 
+ */
 
     #[Route('api/profil/user/informations', name: 'get_user', methods: ['GET'])]
 
@@ -125,34 +130,34 @@ class UserController extends AbstractController
         $user = $this->security->getUser();
 
       if (!$user) {
-            return new JsonResponse(
-                [
-                    'status' => false,
-                    'message' => 'Utilisateur non authentifié'
-                ],
-                JsonResponse::HTTP_UNAUTHORIZED
-            );
+
+            $userNotAuthenticatedResponse= $this->jsonResponseNormalizer->respondError('UNAUTHORIZED', 'Utilisateur non authentifié', 401);
+            
+            return $userNotAuthenticatedResponse;
+          
         }
 
-        return new JsonResponse(
-            [
-                //'status' => true,
-                'current_user' => [
+        $userInfoResponse= $this->jsonResponseNormalizer->respondSuccess(200, ['current_user' => [
                     'id' => $user->getId(),
                     'firstName' => $user->getFirstName(),
                     'lastName' => $user->getLastName(),
                     'email' => $user->getEmail(),
                     'emailVerified' => $user->isEmailVerified()
-                ]
-            ],
-            JsonResponse::HTTP_OK
-        );
+                ]]);
+        return $userInfoResponse;
 
 
     }
 
 
     /**************Modifier les données de  l'utilisateur en cours******************* */
+
+/**
+ * Cette méthode permet de modifier les données de l'utilisateur en cours
+ *
+ * @param Request $request
+ * @return JsonResponse
+ */
 
     #[Route('api/profil/user/update', name: 'update_user', methods: ['PATCH'])]
 
@@ -161,19 +166,13 @@ public function updateUser(Request $request): JsonResponse
     $data = json_decode($request->getContent(), true);
 
 
-
-
-
     $user = $this->security->getUser();
 
     if (!$user) {
-        return new JsonResponse(
-            [
-                'status' => false,
-                'message' => 'Utilisateur non authentifié'
-            ],
-            JsonResponse::HTTP_UNAUTHORIZED
-        );
+
+        $userNotAuthenticatedResponse= $this->jsonResponseNormalizer->respondError('UNAUTHORIZED', 'Utilisateur non authentifié', 401);
+        return $userNotAuthenticatedResponse;
+       
     }
 
         //Analyser les données reçues et vérifier que seuls les champs autorisés sont modifiés sinon retourner une erreur
@@ -181,13 +180,10 @@ public function updateUser(Request $request): JsonResponse
         $invalidFields = array_diff(array_keys($data), ['firstName', 'lastName', 'email']);
 
         if (!empty($invalidFields)) {
-            return new JsonResponse(
-                [
-                    'status' => false,
-                    'message' => 'Les champs suivants ne peuvent pas être modifiés : ' . implode(', ', $invalidFields)
-                ],
-                JsonResponse::HTTP_BAD_REQUEST
-            );
+
+            $invalidFieldsResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Les champs suivants ne peuvent pas être modifiés : ' . implode(', ', $invalidFields), 400);
+            return $invalidFieldsResponse;
+            
         }
 
 
@@ -207,17 +203,18 @@ public function updateUser(Request $request): JsonResponse
     $this->manager->persist($user);
     $this->manager->flush();
 
-    return new JsonResponse(
-        [
-            'status' => true,
-            'message' => 'Utilisateur modifié avec succès'
-        ],
-        JsonResponse::HTTP_OK
-    );
+    $updateSuccessResponse= $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Utilisateur modifié avec succès']);
+    return $updateSuccessResponse;
+
 }
 
 
-
+/**
+ * Cette méthode permet de vérifier si un mot de passe répond aux critères de complexité exigés
+ *
+ * @param string $password
+ * @return array
+ */
     private function isPasswordComplex(string $password): array
     {
         $errors = [];
