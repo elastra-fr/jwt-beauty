@@ -72,6 +72,7 @@ public static function getSubscribedEvents()
                         'Veuillez réinitialiser votre mot de passe en utilisant le lien ci-dessous.'
                     );
 
+                    $user->setPasswordResetInProgress(true);
                     $this->logger->info('Sent warning email to user: ' . $email);
                 }
 

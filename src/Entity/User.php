@@ -44,6 +44,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Salon::class)]
     private Collection $salons;
 
+    #[ORM\Column (type: 'boolean', options: ['default' => false])]
+    private ?bool $passwordResetInProgress = false;
+
     public function __construct()
     {
         $this->salons = new ArrayCollection();
@@ -183,6 +186,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $salon->setUser(null);
             }
         }
+        return $this;
+    }
+
+    public function isPasswordResetInProgress(): ?bool
+    {
+        return $this->passwordResetInProgress;
+    }
+
+    public function setPasswordResetInProgress(bool $passwordResetInProgress): static
+    {
+        $this->passwordResetInProgress = $passwordResetInProgress;
+
         return $this;
     }
 }
