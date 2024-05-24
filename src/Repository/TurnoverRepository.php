@@ -77,6 +77,16 @@ public function getRegionalAverageTurnover(int $regionId): ?float
         ->getSingleScalarResult();
 }
 
+ public function findBySalonAndMonth($salon, DateTime $month): ?Turnover
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.salon = :salon')
+            ->andWhere('t.period = :month')
+            ->setParameter('salon', $salon)
+            ->setParameter('month', $month->format('Y-m-01'))
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 
 
 

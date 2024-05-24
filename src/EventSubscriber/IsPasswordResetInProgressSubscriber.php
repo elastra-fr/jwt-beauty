@@ -8,6 +8,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Repository\UserRepository;
 use App\Service\IsResetInProgressService;
+use Symfony\Component\BrowserKit\Response;
 
 class IsPasswordResetInProgressSubscriber implements EventSubscriberInterface
 {
@@ -39,7 +40,7 @@ class IsPasswordResetInProgressSubscriber implements EventSubscriberInterface
             if ($this->isResetInProgressService->isResetInProgress()) {
 
           
-                $response = new JsonResponse(['message' => 'Réinitialisation du mot de passe en cours. Veuillez vérifier votre email pour terminer le processus.'], 403);
+                $response = new JsonResponse(["success"=>false, 'error'=>['code'=>'UNAUTHORIZED',  'message' => 'Réinitialisation du mot de passe en cours. Veuillez vérifier vos emails pour terminer le processus. Tant que la procédure ne sera pas terminée, vous ne pourrez pas accéder à ces services']], 403);
                 $event->setResponse($response);
             }
 
