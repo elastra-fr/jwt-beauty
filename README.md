@@ -10,6 +10,36 @@ Création d'une API REST permettant à des salons de beauté de renseigner leur 
 PHP 8.2
 Framework Symphony V7
 
+## Harmonisation des réponses 
+
+La plupart des réponses JSON vont se présenter sous les formats qui suivent. Dans toutes les réponses un code HTTP est passé via le header.
+
+En cas de succès :
+
+{
+    "status": "success",
+    "data": {
+        // Les données ou le message de la réponse vont se trouver ici
+    },
+    "error": null
+}
+
+En cas d'erreur :
+
+{
+    "status": "error",
+    "data": null,
+    "error": {
+		"code":"ERROC_CODE",
+		"message": "Détails de l'erreur"
+	}
+}
+
+
+
+
+
+
 
 ## Enregistrement, Système d'authentification et force du mot de passe   
 
