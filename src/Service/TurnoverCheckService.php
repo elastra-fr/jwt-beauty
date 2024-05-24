@@ -1,11 +1,16 @@
 <?php
 
+/************Ce controleur ne sert qu'à tester le service dans le cadre du developpement**********/
+
+
 namespace App\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\UserRepository;
 use App\Repository\TurnoverRepository;
 use App\Service\MailerService;
+use App\Entity\User;
+use App\Entity\Salon;
 
 class TurnoverCheckService
 {
@@ -14,6 +19,14 @@ class TurnoverCheckService
     private $turnoverRepository;
     private $mailerService;
 
+    /**
+     * TurnoverCheckService constructor.
+     * @param EntityManagerInterface $entityManager
+     * @param UserRepository $userRepository
+     * @param TurnoverRepository $turnoverRepository
+     * @param MailerService $mailerService
+     */
+
     public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, TurnoverRepository $turnoverRepository, MailerService $mailerService)
     {
         $this->entityManager = $entityManager;
@@ -21,8 +34,11 @@ class TurnoverCheckService
         $this->turnoverRepository = $turnoverRepository;
         $this->mailerService = $mailerService;
     }
+    /**
+     * Vérifie si les utilisateurs ont déclaré leur chiffre d'affaires pour le mois précédent et les notifie s'ils ne l'ont pas fait
+     */
 
-    public function checkAndNotifyUsers()
+    public function checkAndNotifyUsers(): void
     {
         $users = $this->userRepository->findAll();
         $previousMonth = new \DateTime('first day of last month');
@@ -39,7 +55,12 @@ class TurnoverCheckService
         }
     }
 
-    private function sendNotificationEmail($user, $salon)
+    /**
+     * Envoie un email de notification à l'utilisateur
+     * @param User $user Utilisateur à notifier
+     * @param Salon $salon Salon pour lequel le chiffre d'affaires n'a pas été déclaré
+     */
+    private function sendNotificationEmail(User $user, Salon $salon)
     {
         $subject = "Rappel : Déclarez votre chiffre d'affaires pour le mois précédent";
         $htmlContent = "<p>Bonjour {$user->getFirstName()},</p>

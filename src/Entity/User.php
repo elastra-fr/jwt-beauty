@@ -47,6 +47,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column (type: 'boolean', options: ['default' => false])]
     private ?bool $passwordResetInProgress = false;
 
+    #[ORM\Column(length: 255)]
+    private ?string $password_reset_token = null;
+
     public function __construct()
     {
         $this->salons = new ArrayCollection();
@@ -199,5 +202,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->passwordResetInProgress = $passwordResetInProgress;
 
         return $this;
+    }
+
+    public function getPasswordResetToken(): ?string
+    {
+        return $this->password_reset_token;
+    }
+
+    public function setPasswordResetToken(string $password_reset_token): static
+    {
+        $this->password_reset_token = $password_reset_token;
+
+        return $this;
+    }
+
+    public function generatePasswordResetToken()
+    {
+        $this->password_reset_token = bin2hex(random_bytes(32));
+       return $this;
     }
 }

@@ -217,6 +217,7 @@ public function updateUser(Request $request): JsonResponse
 }
 
 
+
     private function isPasswordComplex(string $password): array
     {
         $errors = [];
