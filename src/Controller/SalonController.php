@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Salon;
+use App\Repository\DepartementRepository;
 use DateTime;
 use App\Repository\SalonRepository;
 
@@ -48,13 +49,21 @@ public function getListSalon(): JsonResponse
 
         $salonArray = [];
         foreach ($salons as $salon) {
+
+            $departement = $salon->getDepartement();
+            $region = $departement ? $departement->getRegion() : null;
+
+
             $salonArray[] = [
                 'id' => $salon->getId(),
                 'salonName' => $salon->getSalonName(),
                 'adress' => $salon->getAdress(),
                 'city' => $salon->getCity(),
                 'zipCode' => $salon->getZipCode(),
-                'departmentCode' => $salon->getDepartmentCode(),
+                'departmentName' => $departement ? $departement->getName() : null,
+                'departmentCode' => $departement ? $departement->getCode() : null,
+                'regionName' => $region ? $region->getRegionName() : null,
+                //'regionCode' => $region ? $region->getCode() : null,          
                 'etp' => $salon->getEtp(),
                 'openingDate' => $salon->getOpeningDate()->format('Y-m-d H:i:s'),
             ];
@@ -67,7 +76,7 @@ public function getListSalon(): JsonResponse
 
     #[Route('/api/profil/create-salon', name: 'app_create_salon', methods: ['POST'])]
 
-    public function createSalon(Request $request):JsonResponse
+    public function createSalon(Request $request, DepartementRepository $departementRepository):JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -80,7 +89,12 @@ public function getListSalon(): JsonResponse
         $etp = $data['etp'];
          $opening_date = DateTime::createFromFormat('Y-m-d\TH:i:s', $data['opening_date']);
 
+
+
         $user = $this->security->getUser();
+
+        $departement = $departementRepository->findOneBy(['code' => $department_code]);
+        
         //$user_id = $user->getId();
 
         $salon = new Salon();
@@ -88,7 +102,7 @@ public function getListSalon(): JsonResponse
         $salon->setAdress($adress);
         $salon->setCity($city);
         $salon->setZipCode($zipCode);
-        $salon->setDepartmentCode($department_code);
+        $salon->setDepartement($departement);
         $salon->setEtp($etp);
         $salon->setOpeningDate($opening_date);
         $salon->setUser($user);
@@ -116,6 +130,9 @@ public function getListSalon(): JsonResponse
             return new JsonResponse(['message' => 'Salon non trouvé'], 404);
         }
 
+        $departement = $salon->getDepartement();
+        $region = $departement ? $departement->getRegion() : null;
+
         $user = $this->security->getUser();
 
         if ($salon->getUser() !== $user) {
@@ -128,7 +145,9 @@ public function getListSalon(): JsonResponse
             'adress' => $salon->getAdress(),
             'city' => $salon->getCity(),
             'zipCode' => $salon->getZipCode(),
-            'departmentCode' => $salon->getDepartmentCode(),
+            'departmentName' => $departement ? $departement->getName() : null,
+            'departmentCode' => $departement ? $departement->getCode() : null,
+            'regionName' => $region ? $region->getRegionName() : null,
             'etp' => $salon->getEtp(),
             'openingDate' => $salon->getOpeningDate()->format('Y-m-d H:i:s'),
         ], 200);
@@ -139,7 +158,7 @@ public function getListSalon(): JsonResponse
 
     #[Route('/api/profil/salon/update/{id}', name: 'app_salon_update', methods: ['PATCH'])]
 
-    public function updateSalon(int $id, Request $request, SalonRepository $salonRepository): JsonResponse
+    public function updateSalon(int $id, Request $request, SalonRepository $salonRepository, DepartementRepository $departementRepository): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
@@ -150,6 +169,8 @@ public function getListSalon(): JsonResponse
         }
 
         $user = $this->security->getUser();
+
+        $departement= $departementRepository->findOneBy(['code' => $data['department_code']]);
 
         if ($salon->getUser() !== $user) {
             return new JsonResponse(['message' => 'Accès interdit'], 403);
@@ -176,7 +197,7 @@ public function getListSalon(): JsonResponse
             $salon->setZipCode($data['zipCode']);
         }
         if (isset($data['department_code'])) {
-            $salon->setDepartmentCode($data['department_code']);
+          $salon->setDepartement($departement);
         }
         if (isset($data['etp'])) {
             $salon->setEtp($data['etp']);

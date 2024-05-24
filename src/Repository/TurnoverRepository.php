@@ -56,11 +56,27 @@ public function getAverageTurnoverInDepartment(string $departmentCode): ?float
 {
     return $this->createQueryBuilder('t')
         ->select('AVG(t.turnoverAmount) as average_turnover')
-        ->innerJoin('t.salon', 's', Join::WITH, 's.departmentCode = :department_code')
+        ->innerJoin('t.salon', 's')
+        ->innerJoin('s.departement', 'd')
+        ->where('d.code = :department_code')
         ->setParameter('department_code', $departmentCode)
         ->getQuery()
         ->getSingleScalarResult();
 }
+
+
+public function getRegionalAverageTurnover(int $regionId): ?float
+{
+    return $this->createQueryBuilder('t')
+        ->select('AVG(t.turnoverAmount) as regional_average_turnover')
+        ->innerJoin('t.salon', 's')
+        ->innerJoin('s.departement', 'd')
+        ->where('d.region = :region_id')
+        ->setParameter('region_id', $regionId)
+        ->getQuery()
+        ->getSingleScalarResult();
+}
+
 
 
 

@@ -4,6 +4,7 @@ namespace App\Entity;
 use App\Repository\SalonRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Repository\DepartementRepository;
 
 #[ORM\Entity(repositoryClass: SalonRepository::class)]
 class Salon
@@ -25,9 +26,6 @@ class Salon
     #[ORM\Column(length: 255)]
     private ?string $zipCode = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $departmentCode = null;
-
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $etp = null;
 
@@ -37,6 +35,10 @@ class Salon
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'salons')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
+
+    #[ORM\ManyToOne(targetEntity: Departement::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Departement $departement = null;
 
     public function getId(): ?int
     {
@@ -87,17 +89,6 @@ class Salon
         return $this;
     }
 
-    public function getDepartmentCode(): ?string
-    {
-        return $this->departmentCode;
-    }
-
-    public function setDepartmentCode(string $departmentCode): static
-    {
-        $this->departmentCode = $departmentCode;
-        return $this;
-    }
-
     public function getEtp(): ?string
     {
         return $this->etp;
@@ -128,6 +119,17 @@ class Salon
     public function setUser(?User $user): self
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function getDepartement(): ?Departement
+    {
+        return $this->departement;
+    }
+
+    public function setDepartement(?Departement $departement): self
+    {
+        $this->departement = $departement;
         return $this;
     }
 }

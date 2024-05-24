@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Turnover;
+use App\Repository\DepartementRepository;
 use App\Repository\SalonRepository;
 use App\Repository\TurnoverRepository;
 use PHPUnit\Util\Json;
@@ -32,7 +33,7 @@ public function __construct(Security $security,  EntityManagerInterface $manager
 
 #[Route('/api/turnover-insert/{salonId}', name: 'app_turnover_add', methods: ['POST'])]
 
-public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
+public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository, DepartementRepository $departementRepository): JsonResponse
     {
         $user = $this->security->getUser();
 
@@ -55,7 +56,22 @@ public function addTurnover(Request $request, SalonRepository $salonRepository, 
             return new JsonResponse(['message' => 'Vous n\'êtes pas propriétaire de ce salon'], 403);
         }
 
-        $departmentCode = $salon->getDepartmentCode();
+        $departement= $salon->getDepartement();
+        $region= $departement->getRegion();
+
+         $departmentCode = $departement->getCode();
+        $departmentName = $departement->getName();
+
+        $regionId = $region->getId();
+        $regionName = $region->getRegionName();   
+
+        //$departmentCode = $salon->getDepartement()->getCode();
+        //$departmentName = $salon->getDepartement()->getName();
+
+
+        
+   
+        
 
         $lastMonthFirstDay = (new DateTime('first day of last month'))->setTime(0, 0);
         $turnover = $this->manager->getRepository(Turnover::class)->findOneBy([
@@ -82,6 +98,9 @@ public function addTurnover(Request $request, SalonRepository $salonRepository, 
         $averageTurnoverNationWide = $turnoverRepository->getAllTurnoversAverage();
         $averageTurnoverNationWide = round($averageTurnoverNationWide, 2);
 
+        $nationalPosition = "";
+$departmentPosition = "";
+
         if ($data['amount'] > $averageTurnoverNationWide) {
             $nationalPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
         }
@@ -90,23 +109,49 @@ public function addTurnover(Request $request, SalonRepository $salonRepository, 
             $nationalPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
         }
 
+
         $averageTurnoverDepartment= $turnoverRepository->getAverageTurnoverInDepartment($departmentCode);
         $averageTurnoverDepartment = round($averageTurnoverDepartment, 2);
 
+        //var_dump($averageTurnoverDepartment);
+        //var_dump($departmentCode);
+        //var_dump($departmentName);
+
         if ($data['amount'] > $averageTurnoverDepartment) {
-            $departmentPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne départementale ($departmentCode) qui est de $averageTurnoverDepartment €";
+            $departmentPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne départementale ($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
         }
 
         else if ($data['amount'] < $averageTurnoverDepartment) {
-            $departmentPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne départementale($departmentCode) qui est de $averageTurnoverDepartment €";
+            $departmentPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne départementale($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
+        }
+
+        else {
+            $departmentPosition = "Votre chiffre d'affaires déclaré est égal à la moyenne départementale ($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
         }
         
+        $averageTurnoverRegion= $turnoverRepository->getRegionalAverageTurnover($regionId);
+        $averageTurnoverRegion = round($averageTurnoverRegion, 2);
+
+        $regionPosition = "";
+
+        if ($data['amount'] > $averageTurnoverRegion) {
+            $regionPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
+        }
+
+        else if ($data['amount'] < $averageTurnoverRegion) {
+            $regionPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
+        }
+
+        else {
+            $regionPosition = "Votre chiffre d'affaires déclaré est égal à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
+        }
     
 
 
-        return new JsonResponse(['message' => 'Chiffre d\'affaires ajouté avec succès', "positionnement_national"=>$nationalPosition, "positionnement_departemental"=>$departmentPosition, "statistiques"=>[
+        return new JsonResponse(['message' => 'Chiffre d\'affaires ajouté avec succès', "positionnement_national"=>$nationalPosition, "positionnement_departemental"=>$departmentPosition, "positionnement_regional"=>$regionPosition,"statistiques"=>[
             "moyenne_nationale"=>$averageTurnoverNationWide,
-            "moyenne_departementale"=>$averageTurnoverDepartment
+            "moyenne_departementale"=>$averageTurnoverDepartment,
+            "moyenne_regionale"=>$averageTurnoverRegion
         
         ]], 201);
     }
