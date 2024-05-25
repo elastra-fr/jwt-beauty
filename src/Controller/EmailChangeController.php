@@ -81,11 +81,27 @@ public function cancelEmailChange(string $token): Response
     $user->setEmailChangeToken(null);
     $user->setNewEmail(null);
 
+    //Déclenchement d'un reset du password par mesure de sécurité
+
+    $user->setPasswordResetInProgress(true);
+    $user->generatePasswordResetToken();
+
+    $confirmationLink = $this->generateUrl('app_reset_password', ['token' => $user->getPasswordResetToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+    $this->mailerService->sendEmail(
+        $user->getEmail(),
+        'Changement d\'email annulé',
+        'Votre demande de changement d\'email a été annulée. Pour des raisons de sécurité, nous vous devez réinitialiser votre mot de passe en cliquant sur le lien suivant : <a href="' . $confirmationLink . '">Réinitialiser votre mot de passe</a>'
+    );
+
+
+ 
     $this->manager->persist($user);
+
 
     $this->manager->flush();
 
-    return $this->json(['message' => 'Changement d\'email annulé'], 200);
+    return $this->json(['message' => 'Changement d\'email annulé. Par mesure de sécurité nous vous demandons de reinitialiser votre mot de passe. Veuillez consulter vos emails et suivre la procédure'], 200);
     
 }
 

@@ -70,6 +70,7 @@ class ResetPasswordController extends AbstractController
                 $user->setPassword($hashedPassword);
                 $user->setPasswordResetToken(null);
                 $user->setLoginAttempts(0);
+                $user->setPasswordResetInProgress(false);
 
                 $this->manager->persist($user);
                 $this->manager->flush();
