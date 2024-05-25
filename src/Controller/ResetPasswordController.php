@@ -57,17 +57,15 @@ class ResetPasswordController extends AbstractController
             $plainPassword = $data['newPassword'];
 
             $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
-            var_dump($passwordErrors);
+          
 
         
 
 
             if (!empty($passwordErrors)) {
-                foreach ($passwordErrors as $error) {
-                            $form['newPassword']->addError(new FormError($error));
-
-                }
-            } else {
+                $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : '.implode(', ', $passwordErrors));
+                 } 
+            else {
                 $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
                 $user->setPassword($hashedPassword);
                 $user->setPasswordResetToken(null);
@@ -78,7 +76,7 @@ class ResetPasswordController extends AbstractController
                 //$entityManager->flush();
 
                 $this->addFlash('success', 'Mot de passe changé avec succès');
-                return $this->redirectToRoute('app_login');
+                
             }
         }
 

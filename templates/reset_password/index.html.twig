@@ -5,7 +5,27 @@
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <h1 class="mt-5 mb-4 text-center">Réinitialisation du mot de passe</h1>
-                <form method="post">
+                
+                {# Affichage des messages flash d'erreur #}
+                {% for message in app.flashes('error') %}
+                    <div class="alert alert-danger">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+
+                {# Affichage des messages flash de succès #}
+                {% set success_flash = app.flashes('success') %}
+                {% for message in success_flash %}
+                    <div class="alert alert-success">
+                        {{ message }}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="#" class="btn btn-link">Cliquez ici pour vous connecter</a>
+                    </div>
+                {% endfor %}
+
+                {# Afficher le formulaire uniquement s'il n'y a pas de message flash de succès #}
+                {% if success_flash is empty %}
                     {{ form_start(form, {'attr': {'class': 'form'}}) }}
                         <div class="mb-3">
                             {{ form_row(form.newPassword, {'attr': {'class': 'form-control', 'placeholder': 'Nouveau mot de passe'}}) }}
@@ -15,7 +35,7 @@
                         </div>
                         <button type="submit" class="btn btn-primary">Réinitialiser le mot de passe</button>
                     {{ form_end(form) }}
-                </form>
+                {% endif %}
             </div>
         </div>
     </div>
