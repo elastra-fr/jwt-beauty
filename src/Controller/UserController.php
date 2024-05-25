@@ -15,6 +15,7 @@ use App\Service\MailerService;
 use App\Service\JsonResponseNormalizer;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
+use App\Service\PasswordValidatorService;
 
 class UserController extends AbstractController
 {
@@ -25,7 +26,9 @@ class UserController extends AbstractController
     private Security $security;
     private JsonResponseNormalizer $jsonResponseNormalizer;
 
-    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService, Security $security, JsonResponseNormalizer $jsonResponseNormalizer)
+    private PasswordValidatorService $passwordValidatorService;
+
+    public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, UserPasswordHasherInterface $passwordHasher, MailerService $mailerService, Security $security, JsonResponseNormalizer $jsonResponseNormalizer, PasswordValidatorService $passwordValidatorService)
     {
         $this->manager = $manager;
         $this->userRepository = $userRepository;
@@ -33,6 +36,7 @@ class UserController extends AbstractController
         $this->mailerService = $mailerService;
         $this->security = $security;
         $this->jsonResponseNormalizer = $jsonResponseNormalizer;
+        $this->passwordValidatorService = $passwordValidatorService;
     }
 
 
@@ -67,7 +71,9 @@ class UserController extends AbstractController
         }
 
         // Vérification de la complexité du mot de passe
-        $passwordErrors = $this->isPasswordComplex($plainPassword);
+        //$passwordErrors = $this->isPasswordComplex($plainPassword);
+        $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
+
         if (!empty($passwordErrors)) {
 
             $InvalidPasswordResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Le mot de passe n\'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : ' . implode(', ', $passwordErrors), 400);
@@ -209,32 +215,5 @@ public function updateUser(Request $request): JsonResponse
 }
 
 
-/**
- * Cette méthode permet de vérifier si un mot de passe répond aux critères de complexité exigés
- *
- * @param string $password
- * @return array
- */
-    private function isPasswordComplex(string $password): array
-    {
-        $errors = [];
 
-        if (!preg_match('/[A-Z]/', $password)) {
-            $errors[] = 'au moins une majuscule';
-        }
-        if (!preg_match('/[a-z]/', $password)) {
-            $errors[] = 'au moins une minuscule';
-        }
-        if (!preg_match('/[0-9]/', $password)) {
-            $errors[] = 'au moins un chiffre';
-        }
-        if (!preg_match('/[\W]/', $password)) {
-            $errors[] = 'au moins un caractère spécial';
-        }
-        if (strlen($password) < 8) {
-            $errors[] = 'au moins 8 caractères';
-        }
-
-        return $errors;
-    }
 }

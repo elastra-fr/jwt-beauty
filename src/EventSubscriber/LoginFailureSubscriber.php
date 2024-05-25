@@ -76,7 +76,7 @@ public static function getSubscribedEvents()
                     $user->generatePasswordResetToken();
 
                             //$resetLink = 'https://example.com/reset-password/' . $user->getPasswordResetToken();
-                            $confirmationLink = $this->router->generate('confirm_email', ['token' => $user->getPasswordResetToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+                            $confirmationLink = $this->router->generate('app_reset_password', ['token' => $user->getPasswordResetToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
                     $this->mailerService->sendEmail(
                         $user->getEmail(),
