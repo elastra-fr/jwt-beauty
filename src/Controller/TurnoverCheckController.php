@@ -6,29 +6,41 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Service\TurnoverCheckService;
+use App\Service\JsonResponseNormalizer;
 
 class TurnoverCheckController extends AbstractController
 {
 
-    private $turnoverCheckService;
+    private TurnoverCheckService $turnoverCheckService;
 
-    public function __construct(TurnoverCheckService $turnoverCheckService)
+    private JsonResponseNormalizer $jsonResponseNormalizer;
+
+    /**
+     * TurnoverCheckController constructor.
+     *
+     * @param TurnoverCheckService $turnoverCheckService
+     */
+    public function __construct(TurnoverCheckService $turnoverCheckService, JsonResponseNormalizer $jsonResponseNormalizer)
     {
         $this->turnoverCheckService = $turnoverCheckService;
+        $this->jsonResponseNormalizer = $jsonResponseNormalizer;
     }
 
+    /**
+     * Vérifie le chiffre d'affaires si le chiffre d'affaires du mois précédent est inférieur à été déclaré à l'aide du service TurnoverCheckService et envoie des notifications par e-mail aux utilisateurs concernés.
+     * @return Response : la réponse HTTP
+     */
 
     #[Route('/turnover/check', name: 'app_turnover_check')]
     public function checkTurnover(): Response
     {
-     try {
+        try {
             $this->turnoverCheckService->checkAndNotifyUsers();
-            return new Response('Notification emails have been sent successfully.');
+            $SuccessNotification = $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Les e-mails de notification ont été envoyés avec succès.']);
+            return $SuccessNotification;
         } catch (\Exception $e) {
-            return new Response('An error occurred: ' . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            $ErrorNotification = $this->jsonResponseNormalizer->respondError('INTERNAL_SERVER_ERROR', 'Une erreur est survenue: ' . $e->getMessage(), 500);
+            return $ErrorNotification;
         }
     }
-
-
-    
 }

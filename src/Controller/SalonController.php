@@ -2,9 +2,8 @@
 
 namespace App\Controller;
 
-//use PHPUnit\Util\Json;
+
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-//use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,14 +19,14 @@ use App\Service\JsonResponseNormalizer;
 class SalonController extends AbstractController
 {
 
-private Security $security;
-private EntityManagerInterface $manager;
+    private Security $security;
+    private EntityManagerInterface $manager;
 
-private JsonResponseNormalizer $jsonResponseNormalizer;
+    private JsonResponseNormalizer $jsonResponseNormalizer;
 
-/**
- * SalonController constructor.
- */
+    /**
+     * SalonController constructor.
+     */
 
     public function __construct(Security $security,  EntityManagerInterface $manager, JsonResponseNormalizer $jsonResponseNormalizer)
     {
@@ -37,17 +36,17 @@ private JsonResponseNormalizer $jsonResponseNormalizer;
     }
 
 
-    /***************Liste des salons dont l'utilisateur actuelle est propriétaire**/
- 
- /**
-  * Cette méthode permet de récupérer la liste des salons dont l'utilisateur actuel est propriétaire
-    * @return JsonResponse : la réponse HTTP
-  */
- 
+
+
+    /**
+     * Cette méthode permet de récupérer la liste des salons dont l'utilisateur actuel est propriétaire
+     * @return JsonResponse : la réponse HTTP
+     */
+
     #[Route('/api/profil/salons', name: 'app_salon', methods: ['GET'])]
 
 
-public function getListSalon(): JsonResponse
+    public function getListSalon(): JsonResponse
     {
         $user = $this->security->getUser();
 
@@ -81,7 +80,6 @@ public function getListSalon(): JsonResponse
                 'departmentName' => $departement ? $departement->getName() : null,
                 'departmentCode' => $departement ? $departement->getCode() : null,
                 'regionName' => $region ? $region->getRegionName() : null,
-                //'regionCode' => $region ? $region->getCode() : null,          
                 'etp' => $salon->getEtp(),
                 'openingDate' => $salon->getOpeningDate()->format('Y-m-d H:i:s'),
             ];
@@ -89,14 +87,20 @@ public function getListSalon(): JsonResponse
 
         $listSalon = $this->jsonResponseNormalizer->respondSuccess(200, ['salons' => $salonArray]);
         return $listSalon;
-        //return new JsonResponse($salonArray, 200);
     }
 
-    /**************Créer un salon pour l'utilisateur actuel en récupérant les données de la requete http*******************/
 
+
+    /**
+     * Permet de créer un salon pour l'utilisateur actuel en récupérant les données de la requête HTTP
+     *
+     * @param Request $request
+     * @param DepartementRepository $departementRepository
+     * @return JsonResponse
+     */
     #[Route('/api/profil/create-salon', name: 'app_create_salon', methods: ['POST'])]
 
-    public function createSalon(Request $request, DepartementRepository $departementRepository):JsonResponse
+    public function createSalon(Request $request, DepartementRepository $departementRepository): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -107,15 +111,15 @@ public function getListSalon(): JsonResponse
         $zipCode = $data['zipCode'];
         $department_code = $data['department_code'];
         $etp = $data['etp'];
-         $opening_date = DateTime::createFromFormat('Y-m-d\TH:i:s', $data['opening_date']);
+        $opening_date = DateTime::createFromFormat('Y-m-d\TH:i:s', $data['opening_date']);
 
 
 
         $user = $this->security->getUser();
 
         $departement = $departementRepository->findOneBy(['code' => $department_code]);
-        
-        //$user_id = $user->getId();
+
+
 
         $salon = new Salon();
         $salon->setSalonName($salon_name);
@@ -130,24 +134,27 @@ public function getListSalon(): JsonResponse
         $this->manager->persist($salon);
         $this->manager->flush();
 
-        return new JsonResponse(['message' => 'Salon créé avec succès'], 201);
-
-
-
-
-
+        $success = $this->jsonResponseNormalizer->respondSuccess(201, ['message' => 'Salon créé avec succès']);
+        return $success;
     }
 
-    /**************Récupération d'un salon  par son ID******************* */
 
-    
+
+    /**
+     * Permet de récupérer les données d'un salon par son ID
+     * @param int $id
+     * @param SalonRepository $salonRepository
+     * @return JsonResponse
+     */
+
     #[Route('/api/profil/salon/{id}', name: 'app_salon_show', methods: ['GET'])]
     public function getSalon(int $id, SalonRepository $salonRepository): JsonResponse
     {
         $salon = $salonRepository->getSalonById($id);
 
         if ($salon === null) {
-            return new JsonResponse(['message' => 'Salon non trouvé'], 404);
+            $errorResponse = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Salon non trouvé', 404);
+            return $errorResponse;
         }
 
         $departement = $salon->getDepartement();
@@ -156,10 +163,11 @@ public function getListSalon(): JsonResponse
         $user = $this->security->getUser();
 
         if ($salon->getUser() !== $user) {
-            return new JsonResponse(['message' => 'Accès interdit'], 403);
+            $forbiddenResponse = $this->jsonResponseNormalizer->respondError('FORBIDDEN', 'Accès interdit', 403);
+            return $forbiddenResponse;
         }
 
-        return new JsonResponse([
+        $SalonDataResponse = $this->jsonResponseNormalizer->respondSuccess(200, [
             'id' => $salon->getId(),
             'salonName' => $salon->getSalonName(),
             'adress' => $salon->getAdress(),
@@ -170,11 +178,19 @@ public function getListSalon(): JsonResponse
             'regionName' => $region ? $region->getRegionName() : null,
             'etp' => $salon->getEtp(),
             'openingDate' => $salon->getOpeningDate()->format('Y-m-d H:i:s'),
-        ], 200);
+        ]);
+        return $SalonDataResponse;
     }
 
 
-    /**************Mettre à jour un salon par son ID******************* */
+    /**
+     * Permet de mettre à jour un salon par son ID
+     * @param int $id
+     * @param Request $request
+     * @param SalonRepository $salonRepository
+     * @param DepartementRepository $departementRepository
+     * @return JsonResponse
+     */
 
     #[Route('/api/profil/salon/update/{id}', name: 'app_salon_update', methods: ['PATCH'])]
 
@@ -185,24 +201,19 @@ public function getListSalon(): JsonResponse
         $salon = $salonRepository->getSalonById($id);
 
         if ($salon === null) {
-            return new JsonResponse(['message' => 'Salon non trouvé'], 404);
+            $salonNotFound = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Salon non trouvé', 404);
+            return $salonNotFound;
         }
 
         $user = $this->security->getUser();
 
-        $departement= $departementRepository->findOneBy(['code' => $data['department_code']]);
+        $departement = $departementRepository->findOneBy(['code' => $data['department_code']]);
 
         if ($salon->getUser() !== $user) {
-            return new JsonResponse(['message' => 'Accès interdit'], 403);
+            $forbiddenResponse = $this->jsonResponseNormalizer->respondError('FORBIDDEN', 'Accès interdit', 403);
+            return $forbiddenResponse;
         }
 
-      /*  $salon_name = $data['salon_name'];
-        $adress = $data['adress'];
-        $city = $data['city'];
-        $zipCode = $data['zipCode'];
-        $department_code = $data['department_code'];
-        $etp = $data['etp'];
-        $opening_date = DateTime::createFromFormat('Y-m-d\TH:i:s', $data['opening_date']);*/
 
         if (isset($data['salon_name'])) {
             $salon->setSalonName($data['salon_name']);
@@ -217,7 +228,7 @@ public function getListSalon(): JsonResponse
             $salon->setZipCode($data['zipCode']);
         }
         if (isset($data['department_code'])) {
-          $salon->setDepartement($departement);
+            $salon->setDepartement($departement);
         }
         if (isset($data['etp'])) {
             $salon->setEtp($data['etp']);
@@ -229,32 +240,7 @@ public function getListSalon(): JsonResponse
         $this->manager->persist($salon);
         $this->manager->flush();
 
-        return new JsonResponse(['message' => 'Salon mis à jour avec succès'], 200);
+        $success = $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Salon mis à jour avec succès']);
+        return $success;
     }
-
-    /**************Supprimer un salon par son ID******************* */  
-/*
-    #[Route('/api/profil/salon/delete/{id}', name: 'app_salon_delete', methods: ['DELETE'])]
-
-    public function deleteSalon(int $id, SalonRepository $salonRepository): JsonResponse
-    {
-        $salon = $salonRepository->getSalonById($id);
-
-        if ($salon === null) {
-            return new JsonResponse(['message' => 'Salon non trouvé'], 404);
-        }
-
-        $user = $this->security->getUser();
-
-        if ($salon->getUser() !== $user) {
-            return new JsonResponse(['message' => 'Accès interdit'], 403);
-        }
-
-        $this->manager->remove($salon);
-        $this->manager->flush();
-
-        return new JsonResponse(['message' => 'Salon supprimé avec succès'], 200);
-    }
-*/
-
 }

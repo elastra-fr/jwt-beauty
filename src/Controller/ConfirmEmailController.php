@@ -17,12 +17,12 @@ class ConfirmEmailController extends AbstractController
 
     private JsonResponseNormalizer $jsonResponseNormalizer;
 
-/**
- * ConfirmEmailController constructor.
- *
- * @param EntityManagerInterface $manager
- * @param UserRepository $userRepository
- */
+    /**
+     * ConfirmEmailController constructor.
+     *
+     * @param EntityManagerInterface $manager
+     * @param UserRepository $userRepository
+     */
     public function __construct(EntityManagerInterface $manager, UserRepository $userRepository, JsonResponseNormalizer $jsonResponseNormalizer)
     {
         $this->manager = $manager;
@@ -30,11 +30,11 @@ class ConfirmEmailController extends AbstractController
         $this->jsonResponseNormalizer = $jsonResponseNormalizer;
     }
 
-/**
- * Cette méthode permet de confirmer l'adresse email d'un utilisateur
- * @param string $token : le token de vérification
- * @return JsonResponse : la réponse HTTP
- */
+    /**
+     * Cette méthode permet de confirmer l'adresse email d'un utilisateur
+     * @param string $token : le token de vérification
+     * @return JsonResponse : la réponse HTTP
+     */
 
     #[Route('/confirm-email/{token}', name: 'confirm_email', methods: ['GET'])]
     public function confirmEmail(string $token): Response
@@ -43,10 +43,9 @@ class ConfirmEmailController extends AbstractController
 
         if (!$user) {
 
-$reponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Token invalide', 400);
+            $reponse = $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Token invalide', 400);
 
             return $reponse;
-
         }
 
         $user->setEmailVerified(true);
@@ -54,8 +53,7 @@ $reponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Token inva
 
         $this->manager->persist($user);
         $this->manager->flush();
-        $reponse= $this->jsonResponseNormalizer->respondSuccess(200, ['message'=>'Adresse email confirmée avec succès']);
+        $reponse = $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Adresse email confirmée avec succès']);
         return $reponse;
-
     }
 }
