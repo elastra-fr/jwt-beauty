@@ -50,6 +50,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $password_reset_token = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $email_change_token = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $new_email = null;
+
     public function __construct()
     {
         $this->salons = new ArrayCollection();
@@ -220,5 +226,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->password_reset_token = bin2hex(random_bytes(32));
        return $this;
+    }
+
+    public function getEmailChangeToken(): ?string
+    {
+        return $this->email_change_token;
+    }
+
+    public function setEmailChangeToken(?string $email_change_token): static
+    {
+        $this->email_change_token = $email_change_token;
+
+        return $this;
+    }
+
+    public function generateEmailChangeToken()
+    {
+        $this->email_change_token = bin2hex(random_bytes(32));
+        return $this;
+    }
+
+    public function getNewEmail(): ?string
+    {
+        return $this->new_email;
+    }
+
+    public function setNewEmail(?string $new_email): static
+    {
+        $this->new_email = $new_email;
+
+        return $this;
     }
 }

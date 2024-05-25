@@ -70,8 +70,8 @@ class UserController extends AbstractController
 
         }
 
-        // Vérification de la complexité du mot de passe
-        //$passwordErrors = $this->isPasswordComplex($plainPassword);
+        // Vérification de la complexité du mot de passe et envoi d'une réponse d'erreur si le mot de passe n'est pas valide
+     
         $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
 
         if (!empty($passwordErrors)) {
@@ -156,7 +156,7 @@ class UserController extends AbstractController
     }
 
 
-    /**************Modifier les données de  l'utilisateur en cours******************* */
+   
 
 /**
  * Cette méthode permet de modifier les données de l'utilisateur en cours
@@ -202,14 +202,39 @@ public function updateUser(Request $request): JsonResponse
         $user->setLastName($data['lastName']);
     }
 
+//Procédure spéciale pour la modification de l'email
+
     if (isset($data['email'])) {
-        $user->setEmail($data['email']);
+        
+        //Génération d'un token de vérification d'email
+
+        $user->setNewEmail($data['email']);
+        $user->generateEmailChangeToken();
+
+             
+
+        //Envoi d'un email à l'utilisateur à son ancienne adresse pour confirmer si il est bien à l'origine de la demande de modification de l'email avec deux liens : un pour confirmer et un pour annuler
+
+        $emailBody = sprintf(
+            'Bonjour %s,<br><p>Vous avez demandé à modifier votre adresse email pour la nouvelle adresse %s. Veuillez cliquer sur le lien suivant pour confirmer votre nouvelle adresse email : <a href="%s">Confirmer votre adresse email</a></p><p>Si vous n\'êtes pas à l\'origine de cette demande, veuillez cliquer sur le lien suivant pour annuler la modification : <a href="%s">Annuler la modification</a></p>', $user->getFirstName(), $user->getNewEmail(),$this->generateUrl('app_confirm_email_change', ['token' => $user->getEmailChangeToken()], UrlGeneratorInterface::ABSOLUTE_URL), $this->generateUrl('app_cancel_email_change', ['token' => $user->getEmailChangeToken()], UrlGeneratorInterface::ABSOLUTE_URL));
+
+        $this->mailerService->sendEmail(
+            $user->getEmail(),
+            'Modification de votre adresse email',
+            $emailBody
+        );
+
+        $emailChangeMessage="Un email de confirmation a été envoyé à votre ancienne adresse email. Veuillez cliquer sur le lien qu'il contient pour confirmer la procédure de changement.";
+
+        
+      //  $confirmationLink = $this->generateUrl('confirm_email', ['token' => $user->getEmailVerificationToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+
     }
 
     $this->manager->persist($user);
     $this->manager->flush();
 
-    $updateSuccessResponse= $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Utilisateur modifié avec succès']);
+    $updateSuccessResponse= $this->jsonResponseNormalizer->respondSuccess(200, ['message' => "Utilisateur modifié avec succès", 'emailChangeMessage' => $emailChangeMessage ?? null]);
     return $updateSuccessResponse;
 
 }
