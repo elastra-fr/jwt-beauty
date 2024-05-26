@@ -208,12 +208,22 @@ class SalonController extends AbstractController
 
         $user = $this->security->getUser();
 
-        $departement = $departementRepository->findOneBy(['code' => $data['department_code']]);
+      
 
         if ($salon->getUser() !== $user) {
          return $this->respondForbidden();
         }
 
+      //Analyser les données reçues et vérifier que seuls les champs autorisés sont modifiés sinon retourner une erreur
+
+        $invalidFields = array_diff(array_keys($data), ['salon_name', 'adress', 'city', 'zipCode', 'department_code', 'etp', 'opening_date']);
+
+        if (!empty($invalidFields)) {
+
+            $invalidFieldsResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Les champs suivants ne peuvent pas être modifiés : ' . implode(', ', $invalidFields), 400);
+            return $invalidFieldsResponse;
+            
+        }
 
         if (isset($data['salon_name'])) {
             $salon->setSalonName($data['salon_name']);
@@ -228,6 +238,7 @@ class SalonController extends AbstractController
             $salon->setZipCode($data['zipCode']);
         }
         if (isset($data['department_code'])) {
+              $departement = $departementRepository->findOneBy(['code' => $data['department_code']]);
             $salon->setDepartement($departement);
         }
         if (isset($data['etp'])) {
