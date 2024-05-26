@@ -15,6 +15,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use DateTime;
 use App\Service\JsonResponseNormalizer;
 use App\Trait\StandardResponsesTrait;
+use App\Entity\User;
+
 
 class TurnoverController extends AbstractController
 {
@@ -49,6 +51,7 @@ class TurnoverController extends AbstractController
     #[Route('/api/turnover-insert/{salonId}', name: 'app_turnover_add', methods: ['POST'])]
     public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
     {
+         /** @var User|null $user */
         $user = $this->security->getUser();
 
         if (!$user) {
@@ -158,6 +161,7 @@ class TurnoverController extends AbstractController
     #[Route('/api/turnover/{salonId}', name: 'app_turnover_show', methods: ['GET'])]
     public function getTurnover(int $salonId, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
     {
+         /** @var User|null $user */
         $user = $this->security->getUser();
 
         if (!$user) {

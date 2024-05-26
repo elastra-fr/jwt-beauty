@@ -134,6 +134,7 @@ class UserController extends AbstractController
 
     public function getUserInfo():JsonResponse
     {
+        /** @var User|null $user */
         $user = $this->security->getUser();
 
       if (!$user) {
@@ -172,7 +173,7 @@ public function updateUser(Request $request): JsonResponse
 {
     $data = json_decode($request->getContent(), true);
 
-
+    /** @var User|null $user */
     $user = $this->security->getUser();
 
     if (!$user) {

@@ -6,7 +6,14 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class JsonResponseNormalizer
 {
-    
+    /**
+     * Fonction pour normaliser les réponses en cas d'erreur
+     *
+     * @param string $errorCode
+     * @param string $errorMessage
+     * @param integer $HttpStatus
+     * @return JsonResponse
+     */
         public function respondError(string $errorCode, string $errorMessage, int $HttpStatus): JsonResponse
     {
         $response = [
@@ -21,6 +28,13 @@ class JsonResponseNormalizer
         return new JsonResponse($response, $HttpStatus);
     }
 
+/**
+ * Fonction pour normaliser les réponses en cas de succès
+ *
+ * @param integer $httpStatus
+ * @param [type] $data
+ * @return JsonResponse
+ */
     public function respondSuccess(int $httpStatus, $data = null ): JsonResponse
     {
         $response = [

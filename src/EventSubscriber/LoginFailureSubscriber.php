@@ -1,47 +1,74 @@
 <?php
+
 namespace App\EventSubscriber;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationFailureEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Repository\UserRepository;
-use Symfony\Component\HttpFoundation\RequestStack;
 use App\Service\MailerService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\RouterInterface;
+use App\Service\JsonResponseNormalizer;
+use App\Trait\StandardResponsesTrait;
 
 class LoginFailureSubscriber implements EventSubscriberInterface
 {
-    private $entityManager;
-    private $userRepository;
-    private $requestStack;
-    private $mailerService;
-    private $logger;
+    use StandardResponsesTrait;
+    private EntityManagerInterface $entityManager;
+    private UserRepository $userRepository;
 
-    private $router;
+    private MailerService $mailerService;
+    private LoggerInterface $logger;
 
-    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, RequestStack $requestStack, MailerService $mailerService, LoggerInterface $logger, RouterInterface $router)
+    private RouterInterface $router;
+
+    private JsonResponseNormalizer $jsonResponseNormalizer;
+
+    /**
+     * LoginFailureSubscriber constructor.
+     *
+     * @param EntityManagerInterface $entityManager
+     * @param UserRepository $userRepository
+     * @param MailerService $mailerService
+     * @param LoggerInterface $logger
+     * @param RouterInterface $router
+     * @param JsonResponseNormalizer $jsonResponseNormalizer
+     */
+    public function __construct(EntityManagerInterface $entityManager, UserRepository $userRepository, MailerService $mailerService, LoggerInterface $logger, RouterInterface $router, JsonResponseNormalizer $jsonResponseNormalizer)
     {
         $this->entityManager = $entityManager;
         $this->userRepository = $userRepository;
-        $this->requestStack = $requestStack;
         $this->mailerService = $mailerService;
         $this->logger = $logger;
         $this->router = $router;
+        $this->jsonResponseNormalizer = $jsonResponseNormalizer;
     }
 
 
+    /**
+     * Retourne les événements auxquels on s'abonne
+     * @return array
+     * 
+     */
+    public static function getSubscribedEvents()
+    {
+        return [
+            'lexik_jwt_authentication.on_authentication_failure' => 'onAuthenticationFailure',
+        ];
+    }
 
-public static function getSubscribedEvents()
-{
-    return [
-        'lexik_jwt_authentication.on_authentication_failure' => 'onAuthenticationFailure',
-    ];
-}
 
-
-
+    /**
+     * Cette méthode est appelée lorsqu'une tentative de connexion échoue
+     * et incrémente le nombre de tentatives de connexion pour un utilisateur donné.
+     * si le nombre de tentatives de connexion est supérieur ou égal à 5, un email est envoyé à l'utilisateur
+     * pour l'informer et lui demander de réinitialiser son mot de passe.
+     *
+     * @param AuthenticationFailureEvent $event
+     * @return void
+     */
     public function onAuthenticationFailure(AuthenticationFailureEvent $event): void
     {
         $this->logger->info('Authentication failure event triggered.');
@@ -72,21 +99,21 @@ public static function getSubscribedEvents()
                 // Vérifier le nombre de tentatives de connexion et si supérieur ou égal à 5, envoyer un email à l'utilisateur pour l'informer
                 if ($user->getLoginAttempts() > 5) {
 
-                      $user->setPasswordResetInProgress(true);
+                    $user->setPasswordResetInProgress(true);
                     $user->generatePasswordResetToken();
 
-                            //$resetLink = 'https://example.com/reset-password/' . $user->getPasswordResetToken();
-                            $confirmationLink = $this->router->generate('app_reset_password', ['token' => $user->getPasswordResetToken()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+                    $confirmationLink = $this->router->generate('app_reset_password', ['token' => $user->getPasswordResetToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
                     $this->mailerService->sendEmail(
                         $user->getEmail(),
                         'Trop de tentatives de connexion',
                         'Vous avez dépassé le nombre de tentatives de connexion autorisées. Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe : <a href="' . $confirmationLink . '">Réinitialiser votre mot de passe</a>'
 
-                        
+
                     );
 
-                  
+
                     $this->logger->info('Sent warning email to user: ' . $email);
                 }
 

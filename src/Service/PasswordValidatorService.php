@@ -4,7 +4,18 @@ namespace App\Service;
 
 class PasswordValidatorService
 {
-   public function isPasswordComplex(string $password): array
+    /**
+     * Vérifie si le mot de passe est complexe et répond aux critères suivants : 
+     * - au moins une majuscule
+     * - au moins une minuscule
+     * - au moins un chiffre
+     * - au moins un caractère spécial
+     * - au moins 8 caractères
+     *
+     * @param string $password
+     * @return array
+     */
+    public function isPasswordComplex(string $password): array
     {
         $errors = [];
 
@@ -26,5 +37,4 @@ class PasswordValidatorService
 
         return $errors;
     }
-    
 }

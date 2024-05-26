@@ -1,4 +1,5 @@
 <?php
+/************Ce controleur ne sert qu'à tester le service dans le cadre du developpement**********/
 
 namespace App\Controller;
 

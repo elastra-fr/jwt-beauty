@@ -16,6 +16,12 @@ class DepartementRepository extends ServiceEntityRepository
         parent::__construct($registry, Departement::class);
     }
 
+/**
+ * Trouver un département par son code
+ *
+ * @param string $code
+ * @return Departement|null
+ */
     public function findOneByCode(string $code): ?Departement
     {
         return $this->createQueryBuilder('d')

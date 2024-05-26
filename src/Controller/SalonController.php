@@ -15,6 +15,7 @@ use DateTime;
 use App\Repository\SalonRepository;
 use App\Service\JsonResponseNormalizer;
 use App\Trait\StandardResponsesTrait;
+use App\Entity\User;
 
 
 class SalonController extends AbstractController
@@ -50,6 +51,7 @@ class SalonController extends AbstractController
 
     public function getListSalon(): JsonResponse
     {
+        /** @var User|null $user */
         $user = $this->security->getUser();
 
         if (!$user) {

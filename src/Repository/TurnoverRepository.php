@@ -18,6 +18,13 @@ class TurnoverRepository extends ServiceEntityRepository
         parent::__construct($registry, Turnover::class);
     }
 
+/**
+ * Trouver un chiffre d'affaire par son id et sa période de déclaration
+ *
+ * @param integer $id
+ * @param DateTime $period
+ * @return Turnover|null
+ */
     public function findOneById(int $id, DateTime $period): ?Turnover
     {
         return $this->createQueryBuilder('t')
@@ -30,6 +37,12 @@ class TurnoverRepository extends ServiceEntityRepository
         ;
     }
 
+/**
+ * Trouver tous les chiffres d'affaires d'un salon triés par période de déclaration de la plus récente à la plus ancienne
+ *
+ * @param integer $salonId
+ * @return array|null
+ */
     public function AllBySalonId(int $salonId): ?array
     {
         return $this->createQueryBuilder('t')
@@ -41,7 +54,11 @@ class TurnoverRepository extends ServiceEntityRepository
         ;
     }
 
-//Calcul de la moyenne National des chiffres d'affaires
+/**
+ * Obtenir la moyenne nationale des chiffres d'affaires
+ *
+ * @return float|null
+ */
     public function getAllTurnoversAverage(): ?float
 {
     $result = $this->createQueryBuilder('t')
@@ -52,6 +69,12 @@ class TurnoverRepository extends ServiceEntityRepository
     return $result;
 }
 
+/**
+ * Obtenir la moyenne des chiffres d'affaires par département
+ *
+ * @param string $departmentCode
+ * @return float|null
+ */
 public function getAverageTurnoverInDepartment(string $departmentCode): ?float
 {
     return $this->createQueryBuilder('t')
@@ -64,7 +87,12 @@ public function getAverageTurnoverInDepartment(string $departmentCode): ?float
         ->getSingleScalarResult();
 }
 
-
+/**
+ * Obtenir la moyenne des chiffres d'affaires par région
+ *
+ * @param integer $regionId
+ * @return float|null
+ */
 public function getRegionalAverageTurnover(int $regionId): ?float
 {
     return $this->createQueryBuilder('t')
@@ -77,6 +105,13 @@ public function getRegionalAverageTurnover(int $regionId): ?float
         ->getSingleScalarResult();
 }
 
+/**
+ * 
+ *Rechercher un chiffre d'affaire par salon et mois
+ * @param [type] $salon
+ * @param DateTime $month
+ * @return Turnover|null
+ */
  public function findBySalonAndMonth($salon, DateTime $month): ?Turnover
     {
         return $this->createQueryBuilder('t')

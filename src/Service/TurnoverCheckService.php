@@ -1,6 +1,6 @@
 <?php
 
-/************Ce controleur ne sert qu'à tester le service dans le cadre du developpement**********/
+
 
 
 namespace App\Service;
@@ -14,10 +14,10 @@ use App\Entity\Salon;
 
 class TurnoverCheckService
 {
-    private $entityManager;
-    private $userRepository;
-    private $turnoverRepository;
-    private $mailerService;
+    private EntityManagerInterface $entityManager;
+    private UserRepository $userRepository;
+    private TurnoverRepository $turnoverRepository;
+    private MailerService $mailerService;
 
     /**
      * TurnoverCheckService constructor.
@@ -36,6 +36,7 @@ class TurnoverCheckService
     }
     /**
      * Vérifie si les utilisateurs ont déclaré leur chiffre d'affaires pour le mois précédent et les notifie s'ils ne l'ont pas fait
+     * @return void
      */
 
     public function checkAndNotifyUsers(): void
