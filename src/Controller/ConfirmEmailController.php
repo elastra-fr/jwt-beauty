@@ -9,9 +9,12 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use App\Service\JsonResponseNormalizer;
+use App\Trait\StandardResponsesTrait;
 
 class ConfirmEmailController extends AbstractController
 {
+
+    use StandardResponsesTrait;
     private EntityManagerInterface $manager;
     private UserRepository $userRepository;
 
@@ -43,9 +46,7 @@ class ConfirmEmailController extends AbstractController
 
         if (!$user) {
 
-            $reponse = $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Token invalide', 400);
-
-            return $reponse;
+            $this->respondNotAuthenticated();
         }
 
         $user->setEmailVerified(true);
@@ -53,7 +54,6 @@ class ConfirmEmailController extends AbstractController
 
         $this->manager->persist($user);
         $this->manager->flush();
-        $reponse = $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Adresse email confirmée avec succès']);
-        return $reponse;
+        return $this->respondConfirmedEmail();
     }
 }

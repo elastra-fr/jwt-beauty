@@ -4,74 +4,76 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\SecurityBundle\Security;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Turnover;
-use App\Repository\DepartementRepository;
+//use App\Repository\DepartementRepository;
 use App\Repository\SalonRepository;
 use App\Repository\TurnoverRepository;
-use PHPUnit\Util\Json;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use DateTime;
+use App\Service\JsonResponseNormalizer;
+use App\Trait\StandardResponsesTrait;
 
 class TurnoverController extends AbstractController
 {
+    use StandardResponsesTrait;
 
-private $security;
+    private Security $security;
+    private EntityManagerInterface $manager;
+    private JsonResponseNormalizer $jsonResponseNormalizer;
 
-private $manager;
+    /**
+     * TurnoverController constructor.
+     *
+     * @param Security $security
+     * @param EntityManagerInterface $manager
+     * @param JsonResponseNormalizer $jsonResponseNormalizer
+     */
+    public function __construct(Security $security, EntityManagerInterface $manager, JsonResponseNormalizer $jsonResponseNormalizer)
+    {
+        $this->security = $security;
+        $this->manager = $manager;
+        $this->jsonResponseNormalizer = $jsonResponseNormalizer;
+    }
 
-public function __construct(Security $security,  EntityManagerInterface $manager)
-{
-    $this->security = $security;
-    $this->manager = $manager;
-}
+    /**
+     * Ajoute un chiffre d'affaires pour un salon
+     * @param Request $request : la requête HTTP
+     * @param SalonRepository $salonRepository : le repository des salons
+     * @param TurnoverRepository $turnoverRepository : le repository des chiffres d'affaires
+     * @return JsonResponse : la réponse HTTP
+     */
 
-/************Insertion d'un chiffre d'affaires pour un salon *****************/
-
-#[Route('/api/turnover-insert/{salonId}', name: 'app_turnover_add', methods: ['POST'])]
-
-public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository, DepartementRepository $departementRepository): JsonResponse
+    #[Route('/api/turnover-insert/{salonId}', name: 'app_turnover_add', methods: ['POST'])]
+    public function addTurnover(Request $request, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
     {
         $user = $this->security->getUser();
 
         if (!$user) {
-            return new JsonResponse(['message' => 'Utilisateur non authentifié'], 401);
+            return $this->respondNotAuthenticated();
         }
 
         $salonId = $request->get('salonId');
-
-        //var_dump($salonId);
-
         $salon = $salonRepository->getSalonById($salonId);
 
         if (!$salon) {
-            return new JsonResponse(['message' => 'Salon non trouvé'], 404);
+            return $this->respondSalonNotFound();
         }
 
-        // Comparaison des ID des utilisateurs
         if ($salon->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['message' => 'Vous n\'êtes pas propriétaire de ce salon'], 403);
+            return $this->respondNotOwner();
         }
 
-        $departement= $salon->getDepartement();
-        $region= $departement->getRegion();
+        $departement = $salon->getDepartement();
+        $region = $departement->getRegion();
 
-         $departmentCode = $departement->getCode();
+        $departmentCode = $departement->getCode();
         $departmentName = $departement->getName();
 
         $regionId = $region->getId();
-        $regionName = $region->getRegionName();   
-
-        //$departmentCode = $salon->getDepartement()->getCode();
-        //$departmentName = $salon->getDepartement()->getName();
-
-
-        
-   
-        
+        $regionName = $region->getRegionName();
 
         $lastMonthFirstDay = (new DateTime('first day of last month'))->setTime(0, 0);
         $turnover = $this->manager->getRepository(Turnover::class)->findOneBy([
@@ -80,12 +82,10 @@ public function addTurnover(Request $request, SalonRepository $salonRepository, 
         ]);
 
         if ($turnover) {
-            return new JsonResponse(['message' => 'Le chiffre d\'affaires pour ce mois existe déjà', 'status'=>false], 403);
+            return $this->respondAlreadyExists();
         }
 
         $data = json_decode($request->getContent(), true);
-        
-        
 
         $turnover = new Turnover();
         $turnover->setTurnoverAmount($data['amount']);
@@ -99,87 +99,80 @@ public function addTurnover(Request $request, SalonRepository $salonRepository, 
         $averageTurnoverNationWide = round($averageTurnoverNationWide, 2);
 
         $nationalPosition = "";
-$departmentPosition = "";
+        $departmentPosition = "";
 
         if ($data['amount'] > $averageTurnoverNationWide) {
             $nationalPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
-        }
-
-        else if ($data['amount'] < $averageTurnoverNationWide) {
+        } else if ($data['amount'] < $averageTurnoverNationWide) {
             $nationalPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne nationale qui est de $averageTurnoverNationWide €";
         }
 
-
-        $averageTurnoverDepartment= $turnoverRepository->getAverageTurnoverInDepartment($departmentCode);
+        $averageTurnoverDepartment = $turnoverRepository->getAverageTurnoverInDepartment($departmentCode);
         $averageTurnoverDepartment = round($averageTurnoverDepartment, 2);
-
-        //var_dump($averageTurnoverDepartment);
-        //var_dump($departmentCode);
-        //var_dump($departmentName);
 
         if ($data['amount'] > $averageTurnoverDepartment) {
             $departmentPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne départementale ($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
-        }
-
-        else if ($data['amount'] < $averageTurnoverDepartment) {
+        } else if ($data['amount'] < $averageTurnoverDepartment) {
             $departmentPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne départementale($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
-        }
-
-        else {
+        } else {
             $departmentPosition = "Votre chiffre d'affaires déclaré est égal à la moyenne départementale ($departmentCode - $departmentName) qui est de $averageTurnoverDepartment €";
         }
-        
-        $averageTurnoverRegion= $turnoverRepository->getRegionalAverageTurnover($regionId);
+
+        $averageTurnoverRegion = $turnoverRepository->getRegionalAverageTurnover($regionId);
         $averageTurnoverRegion = round($averageTurnoverRegion, 2);
 
         $regionPosition = "";
 
         if ($data['amount'] > $averageTurnoverRegion) {
             $regionPosition = "Votre chiffre d'affaires déclaré est supérieur à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
-        }
-
-        else if ($data['amount'] < $averageTurnoverRegion) {
+        } else if ($data['amount'] < $averageTurnoverRegion) {
             $regionPosition = "Votre chiffre d'affaires déclaré est inférieur à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
-        }
-
-        else {
+        } else {
             $regionPosition = "Votre chiffre d'affaires déclaré est égal à la moyenne régionale ($regionName) qui est de $averageTurnoverRegion €";
         }
-    
 
+        $successResponse = $this->jsonResponseNormalizer->respondSuccess(201, [
+            'message' => 'Chiffre d\'affaires ajouté avec succès',
+            "positionnement_national" => $nationalPosition,
+            "positionnement_departemental" => $departmentPosition,
+            "positionnement_regional" => $regionPosition,
+            "statistiques" => [
+                "moyenne_nationale" => $averageTurnoverNationWide,
+                "moyenne_departementale" => $averageTurnoverDepartment,
+                "moyenne_regionale" => $averageTurnoverRegion
+            ]
+        ]);
 
-        return new JsonResponse(['message' => 'Chiffre d\'affaires ajouté avec succès', "positionnement_national"=>$nationalPosition, "positionnement_departemental"=>$departmentPosition, "positionnement_regional"=>$regionPosition,"statistiques"=>[
-            "moyenne_nationale"=>$averageTurnoverNationWide,
-            "moyenne_departementale"=>$averageTurnoverDepartment,
-            "moyenne_regionale"=>$averageTurnoverRegion
-        
-        ]], 201);
+        return $successResponse;
     }
 
-    // /**************Récupération de tous les chiffres d'affaires d'un salon******************* */
+    /**
+     * Récupère l'historique des chiffres d'affaires pour un salon
+     * @param int $salonId : l'identifiant du salon
+     * @param SalonRepository $salonRepository : le repository des salons
+     * @param TurnoverRepository $turnoverRepository : le repository des chiffres d'affaires
+     * @return JsonResponse : la réponse HTTP
+     * 
+     */
 
     #[Route('/api/turnover/{salonId}', name: 'app_turnover_show', methods: ['GET'])]
-    
     public function getTurnover(int $salonId, SalonRepository $salonRepository, TurnoverRepository $turnoverRepository): JsonResponse
     {
         $user = $this->security->getUser();
 
         if (!$user) {
-            return new JsonResponse(['message' => 'Utilisateur non authentifié'], 401);
+            return $this->respondNotAuthenticated();
         }
 
         $salon = $salonRepository->getSalonById($salonId);
 
         if (!$salon) {
-            return new JsonResponse(['message' => 'Salon non trouvé'], 404);
+            return $this->respondSalonNotFound();
         }
 
-        // Comparaison des ID des utilisateurs
         if ($salon->getUser()->getId() !== $user->getId()) {
-            return new JsonResponse(['message' => 'Vous n\'êtes pas propriétaire de ce salon'], 403);
+            return $this->respondNotOwner();
         }
-
-        //$turnovers = $this->manager->getRepository(Turnover::class)->findBy(['salon_id' => $salonId]);
 
         $turnovers = $turnoverRepository->AllBySalonId($salonId);
 
@@ -193,9 +186,7 @@ $departmentPosition = "";
             ];
         }
 
-        return new JsonResponse($data, 200);
+        $tunoverHistory = $this->jsonResponseNormalizer->respondSuccess(200, $data);
+        return $tunoverHistory;
     }
-
-
-
 }

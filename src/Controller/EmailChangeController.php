@@ -10,11 +10,13 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Service\MailerService;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use App\Service\JsonResponseNormalizer;
+use App\Trait\StandardResponsesTrait;
 
 
 class EmailChangeController extends AbstractController
 {
 
+    use StandardResponsesTrait;
 
     private EntityManagerInterface $manager;
     private UserRepository $userRepository;
@@ -56,7 +58,7 @@ class EmailChangeController extends AbstractController
         $user = $this->userRepository->findOneBy(['email_change_token' => $token]);
 
         if (!$user) {
-            return $this->json(['message' => 'Token invalide'], 400);
+       return $this->respondInvalidToken();
         }
 
         $user->setEmail($user->getNewEmail());
@@ -81,8 +83,7 @@ class EmailChangeController extends AbstractController
 
         );
 
-        $successResponse = $this->jsonResponseNormalizer->respondSuccess(200, ['message' => 'Email changé avec succès - Veuillez confirmer la nouvelle adresse mail']);
-        return $successResponse;
+     return $this->respondEmailChangeSuccess();
     }
 
 
@@ -101,7 +102,7 @@ class EmailChangeController extends AbstractController
         $user = $this->userRepository->findOneBy(['email_change_token' => $token]);
 
         if (!$user) {
-            return $this->json(['message' => 'Token invalide'], 400);
+            return $this->respondInvalidToken();
         }
 
         $user->setEmailChangeToken(null);

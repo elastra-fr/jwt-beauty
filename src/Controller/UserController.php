@@ -16,9 +16,12 @@ use App\Service\JsonResponseNormalizer;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use App\Service\PasswordValidatorService;
+use App\Trait\StandardResponsesTrait;
 
 class UserController extends AbstractController
 {
+
+    use StandardResponsesTrait;
     private EntityManagerInterface $manager;
     private UserRepository $userRepository;
     private UserPasswordHasherInterface $passwordHasher;
@@ -65,9 +68,7 @@ class UserController extends AbstractController
       
          if ($emailExist) {
             
-              $mailExistResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Cet email existe déjà', 400);
-                return $mailExistResponse;
-
+    return $this->respondEmailAlreadyExist();
         }
 
         // Vérification de la complexité du mot de passe et envoi d'une réponse d'erreur si le mot de passe n'est pas valide
@@ -176,8 +177,7 @@ public function updateUser(Request $request): JsonResponse
 
     if (!$user) {
 
-        $userNotAuthenticatedResponse= $this->jsonResponseNormalizer->respondError('UNAUTHORIZED', 'Utilisateur non authentifié', 401);
-        return $userNotAuthenticatedResponse;
+     return $this->respondNotAuthenticated();
        
     }
 

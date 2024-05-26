@@ -13,10 +13,12 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Trait\StandardResponsesTrait;
 
 
 class ResetPasswordController extends AbstractController
 {
+    use StandardResponsesTrait;
 
     private ResetPasswordTokenValidator $resetPasswordTokenValidator;
     private JsonResponseNormalizer $jsonResponseNormalizer;
@@ -59,8 +61,7 @@ class ResetPasswordController extends AbstractController
         $user = $this->resetPasswordTokenValidator->validateToken($token);
 
         if (!$user) {
-            $response = $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Token invalide', 400);
-            return $response;
+          return $this->respondInvalidToken();
         }
 
         $form = $this->createForm(ResetPasswordType::class);

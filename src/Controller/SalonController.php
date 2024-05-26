@@ -14,11 +14,13 @@ use App\Repository\DepartementRepository;
 use DateTime;
 use App\Repository\SalonRepository;
 use App\Service\JsonResponseNormalizer;
+use App\Trait\StandardResponsesTrait;
 
 
 class SalonController extends AbstractController
 {
 
+    use StandardResponsesTrait;
     private Security $security;
     private EntityManagerInterface $manager;
 
@@ -59,9 +61,7 @@ class SalonController extends AbstractController
         $salons = $user->getSalons();
 
         if ($salons->isEmpty()) {
-            $NoSalonFound = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Aucun salon trouvé pour cet utilisateur', 200);
-            return $NoSalonFound;
-            //return new JsonResponse(['message' => 'Aucun salon trouvé pour cet utilisateur'], 200);
+            return $this->respondUserSalonsNotFound();
         }
 
         $salonArray = [];
@@ -153,8 +153,7 @@ class SalonController extends AbstractController
         $salon = $salonRepository->getSalonById($id);
 
         if ($salon === null) {
-            $errorResponse = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Salon non trouvé', 404);
-            return $errorResponse;
+ return $this->respondSalonNotFound();
         }
 
         $departement = $salon->getDepartement();
@@ -163,8 +162,8 @@ class SalonController extends AbstractController
         $user = $this->security->getUser();
 
         if ($salon->getUser() !== $user) {
-            $forbiddenResponse = $this->jsonResponseNormalizer->respondError('FORBIDDEN', 'Accès interdit', 403);
-            return $forbiddenResponse;
+       
+            return $this->respondForbidden();
         }
 
         $SalonDataResponse = $this->jsonResponseNormalizer->respondSuccess(200, [
@@ -201,8 +200,8 @@ class SalonController extends AbstractController
         $salon = $salonRepository->getSalonById($id);
 
         if ($salon === null) {
-            $salonNotFound = $this->jsonResponseNormalizer->respondError('NOT_FOUND', 'Salon non trouvé', 404);
-            return $salonNotFound;
+          
+            return $this->respondSalonNotFound();
         }
 
         $user = $this->security->getUser();
@@ -210,8 +209,7 @@ class SalonController extends AbstractController
         $departement = $departementRepository->findOneBy(['code' => $data['department_code']]);
 
         if ($salon->getUser() !== $user) {
-            $forbiddenResponse = $this->jsonResponseNormalizer->respondError('FORBIDDEN', 'Accès interdit', 403);
-            return $forbiddenResponse;
+         return $this->respondForbidden();
         }
 
 
