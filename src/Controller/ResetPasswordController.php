@@ -54,44 +54,45 @@ class ResetPasswordController extends AbstractController
      * @param Request $request
      * @return Response
      */
+#[Route('/reset-password/{token}', name: 'app_reset_password')]
+public function index(string $token, Request $request): Response
+{
+    $user = $this->resetPasswordTokenValidator->validateToken($token);
 
-    #[Route('/reset-password/{token}', name: 'app_reset_password')]
-    public function index(string $token, Request $request): Response
-    {
-        $user = $this->resetPasswordTokenValidator->validateToken($token);
-
-        if (!$user) {
-          return $this->respondInvalidToken();
-        }
-
-        $form = $this->createForm(ResetPasswordType::class);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $plainPassword = $data['newPassword'];
-
-            $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
-
-            if (!empty($passwordErrors)) {
-                $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
-            } else {
-                $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
-                $user->setPassword($hashedPassword);
-                $user->setPasswordResetToken(null);
-                $user->setLoginAttempts(0);
-                $user->setPasswordResetInProgress(false);
-
-                $this->manager->persist($user);
-                $this->manager->flush();
-
-
-                $this->addFlash('success', 'Mot de passe changé avec succès');
-            }
-        }
-
-        return $this->render('reset_password/index.html.twig', [
-            'form' => $form->createView()
-        ]);
+    if (!$user) {
+        return $this->respondInvalidToken();
     }
+
+    $form = $this->createForm(ResetPasswordType::class);
+    $form->handleRequest($request);
+
+    if ($form->isSubmitted() && $form->isValid()) {
+        $data = $form->getData();
+        $plainPassword = $data['newPassword'];
+
+        $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
+
+        if (!empty($passwordErrors)) {
+            $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
+        } else {
+            $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
+            $user->setPassword($hashedPassword);
+            $user->setPasswordResetToken(null);
+            $user->setLoginAttempts(0);
+            $user->setPasswordResetInProgress(false);
+
+            $this->manager->persist($user);
+            $this->manager->flush();
+
+            $this->addFlash('success', 'Mot de passe changé avec succès');
+
+            return $this->redirectToRoute('app_login');
+        }
+    }
+
+    return $this->render('reset_password/index.html.twig', [
+        'form' => $form->createView(),
+    ], $form->isSubmitted() && !$form->isValid() ? new Response('', 422) : null);
+}
+
 }
