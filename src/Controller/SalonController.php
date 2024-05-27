@@ -245,7 +245,8 @@ class SalonController extends AbstractController
             $salon->setEtp($data['etp']);
         }
         if (isset($data['opening_date'])) {
-            $salon->setOpeningDate($data['opening_date']);
+              $opening_date = DateTime::createFromFormat('Y-m-d\TH:i:s', $data['opening_date']);
+            $salon->setOpeningDate($opening_date);
         }
 
         $this->manager->persist($salon);

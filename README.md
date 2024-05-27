@@ -52,13 +52,15 @@ Le Trait StandardResponsesTrait va fournir des réponses standard (toujours mise
 
 ## Enregistrement, Système d'authentification et force du mot de passe   
 
+### JWT
 Système d'authentification JWT mis en place avec lexik/jwt-authentication-bundle et extension open SSL pour création des clés publique et privée.
 
 Durée de validité du token 3600 secondes (1h). Cette durée peut être modifiée dans \config\packages\lexik_jwt_authentication.yaml
 
-
+### Force du mot de passe 
 Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement le service PasswordValidatorService permet de vérifier avec des expressions régulières la conformité du mot de passe. Le renvoi un message d'erreur indiquant les critères qui ne sont pas respectés.
 
+### Vérification de l'adresse mail 
 Lors de l'enregistrement un message d'inscription est envoyé, grace à MailerService, à l'utilisateur pour confirmer son adresse mail et un token d'identification mail est généré et enregistré dans la base de données. Le mail contient un lien de vérification.
 
 Ce lien contient pointe vers la route confirm-email/{token-genéré}.
@@ -66,20 +68,52 @@ Ce lien contient pointe vers la route confirm-email/{token-genéré}.
 Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController vérifie si le token est valide. Si c'est le cas, le champ email_verified est passé à true  dans la base de données et le token est passé à null. Le contrôleur envoi la réponse :
 {"status":"success","data":{"message":"Adresse email confirmée avec succès"},"error":null}
 
+Si le token est invalide :
+{"status":"error","data":null,"error":{"code":"INVALID_TOKEN","message":"Token invalide"}}
 
 Le service IsMailVerifiedService et le subscriber IsMailVerifiedSubscriber vont vérifier si l'utilisateur porteur du token a bien validé son adresse mail. Si ce n'est pas le cas le subscriber va renvoyer le message :
 
 {
-	"message": "Email non vérifié. Veuillez cliquer sur lien de vérification dans l'email envoyé lors de l'inscription. Sans cette action vous ne pourrez pas accéder à ce service"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "email_not_verified",
+		"message": "Email non vérifié. Veuillez cliquer sur lien de vérification dans l'email envoyé lors de l'inscription. Sans cette action vous ne pourrez pas accéder à ce service"
+	}
 }
 
-Les routes concernées par ce contrôle sont listées dans la variable $routesRequiringVerification du subscriber IsMailVerifiedSubscriber. Cette liste permet de limiter ou non l'accès à certaines ressources si l'email n'est pas vérifié. 
+Les routes concernées par ce contrôle sont listées dans la variable $routesRequiringVerification du subscriber IsMailVerifiedSubscriber. Cette liste permet de limiter ou non l'accès à certaines ressources si l'email n'est pas vérifié. Le client pourrait décider que certaines routes peuvent être accessibles en lecture même si l'utilisateur n'a pas encore validé son adress.
 
 Si le token est invalide le controleur envoi la réponse {"status":false,"message":"Token invalide"}
 
-En cas de multiples tentatives de connexions erronnées, l'utilisateur va recevoir un mail pour reset son mot de passe. Et cela via un Event Subscriber LoginFailureSubscriber qui va suivre l'évenement lexik_jwt_authentication.on_authentication_failure et mettre à jour le champs loginAttempts dans la base de données. Si le nombre dépasse 5 un email est envoyé via le service Mailer Service.
-Procédure de Reset à mettre en place.
+### Sécurité en cas de multiples tentatives de connexions
+En cas de multiples tentatives de connexions erronnées, l'utilisateur va recevoir un mail pour reinitialiser son mot de passe. Et cela via un Event Subscriber LoginFailureSubscriber qui va suivre l'évenement lexik_jwt_authentication.on_authentication_failure et mettre à jour le champs loginAttempts dans la base de données. Si le nombre dépasse 5 un email est envoyé via le service Mailer Service.
+Le champ password_reset_in_progress est passé à true et un token password_reset_token est généré.
+L'email de reset contient un lien vers un formulaire de reset du mot de passe. Le mot de passe fera l'objet de la même vérification qu'au moment du register.
 
+Tant que la procédure de reset est en cours le Subscriber IsPasswordResetInProgressSubscriber empêche l'utilisateur d'atteindre les routes derrière https://api.eldn-dev-app.fr/api/* et l'utilisateur recevra la réponse : 
+{
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "UNAUTHORIZED",
+		"message": "Réinitialisation du mot de passe en cours. Veuillez vérifier vos emails pour terminer le processus. Tant que la procédure ne sera pas terminée, vous ne pourrez pas accéder à ces services"
+	}
+}
+
+
+Si la procédure de reset aboutie, le champ password_reset_in_progress est passé à false et le token password_reset_token est passé à null
+
+### Procédure de changement d'email
+
+Le endpoint update permet de changer d'email mais cette mise à jour va faire l'objet d'une procédure particulière.
+Le nouvel email va être conservé provisoirement dans un champ new_email et un token email_change_token va être généré.
+
+Un mail va être envoyé à l'ancienne adresse mail pour confirmer ou non le changement d'adresse email. Ce mail contient deux liens, un lien de confirmation de la procédure et un lien d'annulation de la procédure.
+
+En cas de confirmation l'email est changé, new_email est effacé ainsi que le token. Un nouveau token est généré et mail pour valider la nouvelle adresse est envoyée à cette dernière avec un lien de validation comme pour la procédure de register.
+
+En cas d'annulation de la procédure le token de changement ainsi que new-email sont effacés et par sécurité une procédure de reset du mot de passe est lancée.
 
 
 
@@ -89,7 +123,7 @@ Procédure de Reset à mettre en place.
 Permet l'ajout d'un nouvel utilisateur.
 
 Chemin :
-PATH/register
+https://api.eldn-dev-app.fr/register
 Méthode POST
 Body JSON
 
@@ -103,22 +137,29 @@ Body JSON
 Succès de la requête 
 
 {
-	"status": true,
-	"message": "Utilisateur ajouté avec succès"
+	"status": "success",
+	"data": {
+		"message": "Utilisateur ajouté avec succès"
+	},
+	"error": null
 }
 
-L'Email Existe déjà 
+L'Email Existe déjà :
 
 {
 	"status": false,
 	"message": "Cet email existe déjà"
 }
 
-Mot de passe non conforme
+Mot de passe non conforme :
 
 {
-	"status": false,
-	"message": "Le mot de passe n'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : au moins une majuscule, au moins 8 caractères"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "BAD_REQUEST",
+		"message": "Le mot de passe n'est pas valide . Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial. Critères non respectés : au moins un chiffre, au moins un caractère spécial, au moins 8 caractères"
+	}
 }
 
 
@@ -126,7 +167,7 @@ Mot de passe non conforme
 Authentifie l'utilisateur avec renvoi d'un Token JWT
 
 Chemin
-PATH/api/login_check
+https://api.eldn-dev-app.fr/api/login_check
 Méthode : POST
 
 Body JSON
@@ -136,10 +177,10 @@ Body JSON
 	"password":"Password2?"
 }
 
-Succès du Login => obtention d'un token JSON 
+Succès du Login => obtention d'un token JSON à utiliser pour toutes les requêtes derrières la route https://api.eldn-dev-app.fr/api/*
 
 {
-	"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MTYyNDQwNDYsImV4cCI6MTcxNjI0NzY0Niwicm9sZXMiOlsiUk9MRV9VU0VSIl0sInVzZXJuYW1lIjoidGVzdDJAdGVzdC5jb20ifQ.V8NRQrVvXy2erXMVBEqldF1RUF3f9rtRCwK8ojP8Yvp9TA4ZCmAkm9nQpXcpM86ZnWMltIOvXkKjtTyIj14hNyvjpfX4IIeNmKPPApIljtvP9bpVFr8HYL_JSxmfrdfTiYEiH9MEHvXezADue-uIL9FTY-sHqb2Rw43WYtnOfzGkC9xu9VDXCxG78g2CjKqQOcp_rqIilb88nTFWc16bg3rWwJ5VYD0gieFG1qa-owfQ9VxjoqW1vDe_WRUcdyKWKOhZluABZZrJ_ECcdEvFUDA6YgWA-WV4RAsstDmUh3TCQJp0bNZPT6lRn5FkXSG0X_wqC-8DP84Z9TMRdKbsbg"
+	"token": "token_text"
 }
 
 Echec du Login =>
@@ -168,21 +209,25 @@ Header "Bearer Texte_du_token_jwt"
 Réponse :
 
 {
-	"current_user": {
-		"id": 17,
-		"firstName": "Jules",
-		"lastName": "Cesar",
-		"email": "jules.cesar@test.com",
-		"emailVerified": false
-	}
+	"status": "success",
+	"data": {
+		"current_user": {
+			"id": 3,
+			"firstName": "Edmund",
+			"lastName": "Stein",
+			"email": "test@test.com",
+			"emailVerified": true
+		}
+	},
+	"error": null
 }
 
 ##### Modification profil utilisateur en cours
 
-Ce chemin permet de modifier fistName, lastName et email. Il n'est pas nécessaire de tous les modifier, la modification d'un seul paramètre est possible.
+Ce chemin permet de modifier fistName, lastName et email. Il n'est pas nécessaire de tous les modifier, la modification d'un seul paramètre est possible, 
 
 Chemin
-PATH/api/profil/user/update
+https://api.eldn-dev-app.fr/api/profil/user/update
 Méthode : PATCH
 Header "Bearer Texte_du_token_jwt"
 
@@ -196,19 +241,39 @@ Body :
 
 }
 
+Si l'utilisateur a modifié son adresse mail cela va lancer un procédure et un message spécifique .
 
+Réponse en cas de succès :
 
-Réponse : 
 {
-	"status": true,
-	"message": "Utilisateur modifié avec succès"
+	"status": "success",
+	"data": {
+		"message": "Utilisateur modifié avec succès",
+		"emailChangeMessage": "Un email de confirmation a été envoyé à votre ancienne adresse email. Veuillez cliquer sur le lien qu'il contient pour confirmer la procédure de changement."
+	},
+	"error": null
+}
+
+Si pas de changement d'adresse mail :
+
+{
+	"status": "success",
+	"data": {
+		"message": "Utilisateur modifié avec succès",
+		"emailChangeMessage": null
+	},
+	"error": null
 }
 
 Le controlleur contient des champs autorisés pour la modification. Si des champs non autorisés sont passés dans le body :
 
 {
-	"status": false,
-	"message": "Les champs suivants ne peuvent pas être modifiés : password"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "BAD_REQUEST",
+		"message": "Les champs suivants ne peuvent pas être modifiés : password"
+	}
 }
 
 
@@ -223,6 +288,7 @@ Méthode : POST
 Header "Bearer Texte_du_token_jwt"
 
 Le controlleur va récupérer l'id de l'utilisateur associé au token et l'intégrer à l'intégrer à la colonne user_id.
+Pour le département l'utilisateur va rentrer le code usuel du département. Le controlleur va automatiquent faire la jointure avec l'id département de la table département.
 
 Body :
 
@@ -236,9 +302,12 @@ Body :
     "opening_date": "2024-02-01T10:00:00"
 }
 
-En cas de succès :
 {
-	"message": "Salon créé avec succès"
+	"status": "success",
+	"data": {
+		"message": "Salon créé avec succès"
+	},
+	"error": null
 }
 
 
@@ -247,41 +316,53 @@ En cas de succès :
 ##### Récupération de la liste de salons appartenant à l'utilisateur en cours
 
 Chemin
-PATH/api/profil/salons
+https://api.eldn-dev-app.fr/api/profil/salons
 Méthode : GET
 Header "Bearer Texte_du_token_jwt"
 
-Le controlleur ne va retourner que les salons associés à l'id porteur du token.
+Le controlleur ne va retourner que les salons associés à l'id porteur du token. 
 
 Réponse :
 
-[
-	{
-		"id": 1,
-		"salonName": "Nouveau salon",
-		"adress": "123 rue des Salons",
-		"city": "Paris",
-		"zipCode": "75000",
-		"departmentCode": "75",
-		"etp": "10.00",
-		"openingDate": "2023-03-20 10:00:00"
+{
+	"status": "success",
+	"data": {
+		"salons": [
+			{
+				"id": 1,
+				"salonName": "Peau'tit Bonheur",
+				"adress": "123 rue de la liberté",
+				"city": "Lyon",
+				"zipCode": "69000",
+				"departmentName": "Rhône",
+				"departmentCode": "69",
+				"regionName": "Auvergne-Rhône-Alpes",
+				"etp": "3.00",
+				"openingDate": "2022-08-08 10:00:00"
+			},
+			{
+				"id": 2,
+				"salonName": "Beauté Corse",
+				"adress": "123 rue de l'indépendance",
+				"city": "Ajaccio",
+				"zipCode": "20000",
+				"departmentName": "Haute-Corse",
+				"departmentCode": "2B",
+				"regionName": "Corse",
+				"etp": "7.00",
+				"openingDate": "2023-09-01 10:00:00"
+			}
+		]
 	},
-	{
-		"id": 2,
-		"salonName": "Nouveau salon 2",
-		"adress": "123 rue des Salons",
-		"city": "Paris",
-		"zipCode": "75000",
-		"departmentCode": "75",
-		"etp": "10.00",
-		"openingDate": "2024-04-19 10:00:00"
-	}
-]
-
-En cas d'absence de salon :
+	"error": null
+}
 
 {
-	"message": "Aucun salon trouvé pour cet utilisateur"
+	"status": "success",
+	"data": {
+		"message": "Aucun salon trouvé pour cet utilisateur"
+	},
+	"error": null
 }
 
 
@@ -292,7 +373,7 @@ En cas d'absence de salon :
 
 
 Chemin
-PATH/api/profil/salon/{id}
+https://api.eldn-dev-app.fr/api/profil/salon/{id}
 Méthode : GET
 Header "Bearer Texte_du_token_jwt"
 
@@ -300,26 +381,42 @@ Avant de répondre, le controleur va vérifier préalablement que le salon pass�
 
 En de correspondance d'Id :
 {
-	"id": 3,
-	"salonName": "Beauty Salon1",
-	"adress": "123 rue des Salons",
-	"city": "Caen",
-	"zipCode": "14000",
-	"departmentCode": "14",
-	"etp": "2.00",
-	"openingDate": "2024-02-01 10:00:00"
+	"status": "success",
+	"data": {
+		"id": 3,
+		"salonName": "Beauté Bretonne",
+		"adress": "123 rue de l'indépendance",
+		"city": "Rennes",
+		"zipCode": "35000",
+		"departmentName": "Ille-et-Vilaine",
+		"departmentCode": "35",
+		"regionName": "Bretagne",
+		"etp": "7.00",
+		"openingDate": "2022-02-15 10:00:00"
+	},
+	"error": null
 }
 
-
-Si les id ne correspondent pas :
+Tentative d'accès à un salon dont le client n'est pas propriétaire :
 
 {
-	"message": "Accès interdit"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "FORBIDDEN",
+		"message": "Accès non autorisée"
+	}
 }
 
-Si l'id Salon n'existe pas :
+Si le salon n'existe pas :
+
 {
-	"message": "Salon non trouvé"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "SALON_NOT_FOUND",
+		"message": "Salon non trouvé"
+	}
 }
 
 
@@ -344,13 +441,22 @@ Body :
 Mise à jour réussie :
 
 {
-	"message": "Salon mis à jour avec succès"
+	"status": "success",
+	"data": {
+		"message": "Salon mis à jour avec succès"
+	},
+	"error": null
 }
 
 Tentative de mise jour d'un salon qui n'est pas la propriété du porteur du token
 
 {
-	"message": "Accès interdit"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "FORBIDDEN",
+		"message": "Accès non autorisée"
+	}
 }
 
 
