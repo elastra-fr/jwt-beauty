@@ -32,7 +32,7 @@ class TurnoverCheckController extends AbstractController
      * @return Response : la réponse HTTP
      */
 
-    #[Route('/turnover/check', name: 'app_turnover_check')]
+ //   #[Route('/turnover/check', name: 'app_turnover_check')]
     public function checkTurnover(): Response
     {
         try {

@@ -283,7 +283,7 @@ Le controlleur contient des champs autorisés pour la modification. Si des champ
 ##### Ajout d'un salon par l'utilisateur en cours
 
 Chemin
-PATH/api/profil/create-salon
+https://api.eldn-dev-app.fr/api/profil/create-salon
 Méthode : POST 
 Header "Bearer Texte_du_token_jwt"
 
@@ -425,7 +425,7 @@ Si le salon n'existe pas :
 ##### Modification des informations d'un salon précis appartenant à l'utilisateur en cours
 
 Chemin
-PATH/api/profil/salon/update/{id}
+https://api.eldn-dev-app.fr/api/profil/salon/update/{id}
 Méthode : PATCH
 Header "Bearer Texte_du_token_jwt"
 
@@ -435,7 +435,13 @@ Ce chemin permet de modifier toutes les données d'un salon. Il n'est pas néces
 
 Body :
 {
-	"salon_name":"Beauty parlor"
+    "salon_name": "Beauté Bretonne",
+    "adress": "123 rue de l'indépendance",
+    "city": "Rennes",
+    "zipCode": "35000",
+    "department_code": "35",
+    "etp": "6",
+    "opening_date": "2022-02-15T10:00:00"
 }
 
 Mise à jour réussie :
@@ -465,7 +471,7 @@ Tentative de mise jour d'un salon qui n'est pas la propriété du porteur du tok
 #### Insertion CA du mois précédent pour un salon
 
 Chemin
-PATH/api/turnover-insert/{salonId}
+https://api.eldn-dev-app.fr/api/turnover-insert/1
 Méthode : POST
 Header "Bearer Texte_du_token_jwt"
 
@@ -475,43 +481,61 @@ Body
 
 {
 	
-	"amount":6000
+	"amount":15000
 	
 		
 }
 
 Après l'insertion le contrôleur va recalculer les statistiques (moyenne nationale, départementale, régionale) et va retourner une appréciation sur le positionnement et statistiques brut pour usage par le front si nécessaire :
 {
-	"message": "Chiffre d'affaires ajouté avec succès",
-	"positionnement": "Votre chiffre d'affaires déclaré est inférieur à la moyenne nationale qui est de 5640.66 €",
-	"statistiques": {
-		"moyenne_nationale": 5640.66
-	}
+	"status": "success",
+	"data": {
+		"message": "Chiffre d'affaires ajouté avec succès",
+		"positionnement_national": "",
+		"positionnement_departemental": "Votre chiffre d'affaires déclaré est égal à la moyenne départementale (35 - Ille-et-Vilaine) qui est de 15000 €",
+		"positionnement_regional": "Votre chiffre d'affaires déclaré est égal à la moyenne régionale (Bretagne) qui est de 15000 €",
+		"statistiques": {
+			"moyenne_nationale": 15000,
+			"moyenne_departementale": 15000,
+			"moyenne_regionale": 15000
+		}
+	},
+	"error": null
 }
 
 
 Si le chiffre d'affaires du mois précédent a déjà été ajouté :
 
 {
-	"message": "Le chiffre d'affaires pour ce mois existe déjà"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "ALREADY_EXISTS",
+		"message": "Le chiffre d'affaires pour ce mois existe déjà"
+	}
 }
 
 Si la requête porte sur un salon pour n'appartenant pas au porteur du toke:
 
 {
-	"message": "Vous n'êtes pas propriétaire de ce salon"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "NOT_OWNER",
+		"message": "Vous n'êtes pas propriétaire de ce salon"
+	}
 }
 
 #### Historique des CA pour un salon
 
 Chemin
-PATH/api/turnover/{salonId}
+https://api.eldn-dev-app.fr/api/turnover/{id}
 Méthode : GET
 Header "Bearer Texte_du_token_jwt"
 
 Le controleur va vérifier préalablement que le salon passé en url appartient bien à l'utilisateur porteur du token en comparant l'id du salon demandé avec l'id associé au porteur du token.
 
-En cas de succès de la requête obtention de la liste des CA déclarés pour le salon concerné :
+En cas de succès de la requête obtention de la liste des CA déclarés pour le salon concerné du plus récent au plus ancien.
 
 [
 	{
@@ -540,31 +564,22 @@ En cas de succès de la requête obtention de la liste des CA déclarés pour le
 		"turnover_amount": "6246.39"
 	}
 	]
-
-Si l'utilisateur tente de renseigner l'id d'un salon qu'il ne possède pas :
-
 {
-	"message": "Vous n'êtes pas propriétaire de ce salon"
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "NOT_OWNER",
+		"message": "Vous n'êtes pas propriétaire de ce salon"
+	}
 }
 
-## Structure base de donnée
-
-Table Users 
+## Rappels mails 
 
 
-email 
-password
-region
-département
-nom du salon
-adresse du salon
-date d'ouverture
-effectif etp
-Nom représentant
-Prénom représentant
 
-CA
-PERIODE CA
+
+
+
 
 
 
