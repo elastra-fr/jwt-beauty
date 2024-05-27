@@ -66,33 +66,46 @@ public function index(string $token, Request $request): Response
     $form = $this->createForm(ResetPasswordType::class);
     $form->handleRequest($request);
 
-    if ($form->isSubmitted() && $form->isValid()) {
-        $data = $form->getData();
-        $plainPassword = $data['newPassword'];
+    if ($form->isSubmitted()) {
+        if ($form->isValid()) {
+            $data = $form->getData();
+            $plainPassword = $data['newPassword'];
 
-        $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
+            $passwordErrors = $this->passwordValidatorService->isPasswordComplex($plainPassword);
 
-        if (!empty($passwordErrors)) {
-            $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
+            if (!empty($passwordErrors)) {
+                $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
+                // Renvoyer un statut 422 si les critères de validation de mot de passe ne sont pas respectés
+                return $this->render('reset_password/index.html.twig', [
+                    'form' => $form->createView(),
+                ], new Response('', 422));
+            } else {
+                $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
+                $user->setPassword($hashedPassword);
+                $user->setPasswordResetToken(null);
+                $user->setLoginAttempts(0);
+                $user->setPasswordResetInProgress(false);
+
+                $this->manager->persist($user);
+                $this->manager->flush();
+
+                $this->addFlash('success', 'Mot de passe changé avec succès');
+
+                return $this->redirectToRoute('app_login');
+            }
         } else {
-            $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
-            $user->setPassword($hashedPassword);
-            $user->setPasswordResetToken(null);
-            $user->setLoginAttempts(0);
-            $user->setPasswordResetInProgress(false);
-
-            $this->manager->persist($user);
-            $this->manager->flush();
-
-            $this->addFlash('success', 'Mot de passe changé avec succès');
-
-            return $this->redirectToRoute('app_login');
+            // Renvoyer un statut 422 si le formulaire n'est pas valide
+            return $this->render('reset_password/index.html.twig', [
+                'form' => $form->createView(),
+            ], new Response('', 422));
         }
     }
 
+    // Si le formulaire n'est pas soumis, rendre la vue normale sans statut 422
     return $this->render('reset_password/index.html.twig', [
         'form' => $form->createView(),
-    ], $form->isSubmitted() && !$form->isValid() ? new Response('', 422) : null);
+    ]);
 }
+
 
 }
