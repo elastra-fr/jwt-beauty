@@ -54,20 +54,20 @@ class ResetPasswordController extends AbstractController
      * @param Request $request
      * @return Response
      */
-#[Route('/reset-password/{token}', name: 'app_reset_password')]
-public function index(string $token, Request $request): Response
-{
-    $user = $this->resetPasswordTokenValidator->validateToken($token);
+ #[Route('/reset-password/{token}', name: 'app_reset_password')]
+    public function index(string $token, Request $request): Response
+    {
+        $user = $this->resetPasswordTokenValidator->validateToken($token);
 
-    if (!$user) {
-        return $this->respondInvalidToken();
-    }
+        if (!$user) {
+            return $this->respondInvalidToken();
+        }
 
-    $form = $this->createForm(ResetPasswordType::class);
-    $form->handleRequest($request);
+        $form = $this->createForm(ResetPasswordType::class);
+        $form->handleRequest($request);
 
-    if ($form->isSubmitted()) {
-        if ($form->isValid()) {
+        // Traitez la réinitialisation du mot de passe uniquement si le formulaire est soumis
+        if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $plainPassword = $data['newPassword'];
 
@@ -75,10 +75,6 @@ public function index(string $token, Request $request): Response
 
             if (!empty($passwordErrors)) {
                 $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
-                // Renvoyer un statut 422 si les critères de validation de mot de passe ne sont pas respectés
-                return $this->render('reset_password/index.html.twig', [
-                    'form' => $form->createView(),
-                ], new Response('', 422));
             } else {
                 $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
                 $user->setPassword($hashedPassword);
@@ -93,19 +89,14 @@ public function index(string $token, Request $request): Response
 
                 return $this->redirectToRoute('app_login');
             }
-        } else {
-            // Renvoyer un statut 422 si le formulaire n'est pas valide
-            return $this->render('reset_password/index.html.twig', [
-                'form' => $form->createView(),
-            ], new Response('', 422));
         }
+
+        // Rendu normal de la page de réinitialisation du mot de passe
+        return $this->render('reset_password/index.html.twig', [
+            'form' => $form->createView(),
+        ]);
     }
 
-    // Si le formulaire n'est pas soumis, rendre la vue normale sans statut 422
-    return $this->render('reset_password/index.html.twig', [
-        'form' => $form->createView(),
-    ]);
-}
 
 
 }
