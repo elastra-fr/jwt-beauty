@@ -37,7 +37,7 @@ En cas d'erreur :
     "status": "error",
     "data": null,
     "error": {
-		"code":"ERROC_CODE",
+		"code":"ERROR_CODE",
 		"message": "Détails de l'erreur"
 	}
 }
@@ -482,7 +482,7 @@ Tentative de mise jour d'un salon qui n'est pas la propriété du porteur du tok
 #### Insertion CA du mois précédent pour un salon
 
 Chemin
-https://api.eldn-dev-app.fr/api/turnover-insert/1
+https://api.eldn-dev-app.fr/api/turnover-insert/{id}
 Méthode : POST
 Header "Bearer Texte_du_token_jwt"
 
@@ -586,7 +586,9 @@ En cas de succès de la requête obtention de la liste des CA déclarés pour le
 
 ## Rappels mails 
 
+Mise en place d'une tâche CRON 0 0 5 00 cd /home/volo6797api.eldn-dev-app.fr/jwt-beauty/ && php bin/console app:check-turnover >> /var/log/turnover_check.log
 
+Cette tache va lancer la commande turnover-check et envoyer un mail le 5 du mois à tout ceux qui n'ont pas déclaré leur CA le mois précédent.
 
 
 
