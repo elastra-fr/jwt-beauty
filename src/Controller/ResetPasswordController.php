@@ -88,6 +88,8 @@ class ResetPasswordController extends AbstractController
 
                 $this->addFlash('success', 'Mot de passe changé avec succès');
 
+                
+
              
             }
         }
