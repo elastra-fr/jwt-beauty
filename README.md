@@ -254,6 +254,17 @@ Réponse en cas de succès :
 	"error": null
 }
 
+Si l'utilisateur tente de changer pour un email existant dans la base :
+
+{
+	"status": "error",
+	"data": null,
+	"error": {
+		"code": "BAD_REQUEST",
+		"message": "Cet email est déjà utilisé par un autre utilisateur"
+	}
+}
+
 Si pas de changement d'adresse mail :
 
 {
