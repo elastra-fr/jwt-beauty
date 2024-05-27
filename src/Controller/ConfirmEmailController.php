@@ -45,8 +45,7 @@ class ConfirmEmailController extends AbstractController
         $user = $this->userRepository->findOneBy(['emailVerificationToken' => $token]);
 
         if (!$user) {
-
-            $this->respondNotAuthenticated();
+            return $this->respondInvalidToken();
         }
 
         $user->setEmailVerified(true);

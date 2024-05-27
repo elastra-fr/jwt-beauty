@@ -10,6 +10,13 @@ Création d'une API REST permettant à des salons de beauté de renseigner leur 
 PHP 8.2
 Framework Symphony V7
 
+## Environnement de production 
+PHP 8.2 
+Hebergement  O2switch
+Domaine : api.eldn-dev-app.fr
+
+
+
 ## Harmonisation des réponses 
 
 La plupart des réponses JSON vont se présenter sous les formats qui suivent. Dans toutes les réponses un code HTTP est passé via le header.
@@ -36,8 +43,10 @@ En cas d'erreur :
 }
 
 
-Ce format est normalisé grace au service JsonResponseNormalizer.  Potentiellement cette standardisation peut faciliter la gestion des réponses par le front end.
+Ce format est normalisé grace au service JsonResponseNormalizer.  
+Potentiellement cette standardisation peut faciliter la gestion des réponses par le front end.
 
+Le Trait StandardResponsesTrait va fournir des réponses standard (toujours mises en forme avec JsonResponsesNormalizer).
 
 
 
@@ -45,16 +54,18 @@ Ce format est normalisé grace au service JsonResponseNormalizer.  Potentielleme
 
 Système d'authentification JWT mis en place avec lexik/jwt-authentication-bundle et extension open SSL pour création des clés publique et privée.
 
-Durée de validité du token 3600 secondes (1h) - Peut être modifié dans \config\packages\lexik_jwt_authentication.yaml
+Durée de validité du token 3600 secondes (1h). Cette durée peut être modifiée dans \config\packages\lexik_jwt_authentication.yaml
 
 
-Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement la fonction isPasswordComplex  de le UserController permet de vérifier avec des expressions régulières la conformité du mot de passe. La fonction renvoi un message d'erreur indiquant les critères qui ne sont pas respectés.
+Le mot de passe doit être d'au moins 8 caractères comprenant une majuscule, un chiffre et un caractère spécial. Au moment de l'enregistrement le service PasswordValidatorService permet de vérifier avec des expressions régulières la conformité du mot de passe. Le renvoi un message d'erreur indiquant les critères qui ne sont pas respectés.
 
-Lors de l'enregistrement un message d'inscription est envoyé à l'utilisateur pour confirmer son adresse mail et un token d'identification mail est généré et enregsitré dans la base de données.
+Lors de l'enregistrement un message d'inscription est envoyé, grace à MailerService, à l'utilisateur pour confirmer son adresse mail et un token d'identification mail est généré et enregistré dans la base de données. Le mail contient un lien de vérification.
 
 Ce lien contient pointe vers la route confirm-email/{token-genéré}.
 
-Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController vérifie si le token est valide. Si c'est le cas, le champ email_verified est passé à true  dans la base de données et le token est passé à null. Le contrôleur envoi la réponse {"status":true,"message":"Adresse email confirmée avec succès"}
+Quand l'utilisateur clique sur le lien, le controlleur ConfirmEmailController vérifie si le token est valide. Si c'est le cas, le champ email_verified est passé à true  dans la base de données et le token est passé à null. Le contrôleur envoi la réponse :
+{"status":"success","data":{"message":"Adresse email confirmée avec succès"},"error":null}
+
 
 Le service IsMailVerifiedService et le subscriber IsMailVerifiedSubscriber vont vérifier si l'utilisateur porteur du token a bien validé son adresse mail. Si ce n'est pas le cas le subscriber va renvoyer le message :
 
@@ -371,6 +382,7 @@ Après l'insertion le contrôleur va recalculer les statistiques (moyenne nation
 		"moyenne_nationale": 5640.66
 	}
 }
+
 
 Si le chiffre d'affaires du mois précédent a déjà été ajouté :
 
