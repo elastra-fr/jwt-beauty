@@ -193,6 +193,9 @@ public function updateUser(Request $request): JsonResponse
             
         }
 
+       
+
+
 
 
     if (isset($data['firstName'])) {
@@ -207,6 +210,14 @@ public function updateUser(Request $request): JsonResponse
 
     if (isset($data['email'])) {
         
+        // Vérification si l'email existe
+        $emailExist = $this->userRepository->findOneBy(['email' => $data['email']]);
+
+      
+         if ($emailExist) {
+
+            $emailExistResponse= $this->jsonResponseNormalizer->respondError('BAD_REQUEST', 'Cet email est déjà utilisé par un autre utilisateur', 400);
+            return $emailExistResponse;}
         //Génération d'un token de vérification d'email
 
         $user->setNewEmail($data['email']);
