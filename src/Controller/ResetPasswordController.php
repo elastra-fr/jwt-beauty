@@ -75,7 +75,7 @@ class ResetPasswordController extends AbstractController
 
             if (!empty($passwordErrors)) {
                 $this->addFlash('error', 'Le mot de passe doit contenir au moins 8 caractères, une lettre majuscule, une lettre minuscule, un chiffre et un caractère spécial. Veuillez respecter ces critères : ' . implode(', ', $passwordErrors));
-            return new Response(null, 422);
+  
             } else {
                 $hashedPassword = $this->passwordEncoder->hashPassword($user, $plainPassword);
                 $user->setPassword($hashedPassword);
@@ -88,7 +88,7 @@ class ResetPasswordController extends AbstractController
 
                 $this->addFlash('success', 'Mot de passe changé avec succès');
 
-             return new Response(null, 422);
+             
             }
         }
 
